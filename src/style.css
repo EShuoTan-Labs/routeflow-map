@@ -1,8 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap");
 :root {
   font-family: "Noto Sans SC", system-ui, sans-serif;
-  color: #243c37;
-  background: #f7f8f4;
+  color: #243447;
+  background: #f5f8fc;
   font-synthesis: none;
   font-size: 14px;
   color-scheme: light;
@@ -36,7 +36,7 @@ summary {
 }
 button {
   cursor: pointer;
-  border: 1px solid #dce3dc;
+  border: 1px solid #dbe3ed;
   background: #fff;
   border-radius: 7px;
   padding: 9px 12px;
@@ -47,33 +47,33 @@ button:disabled {
   opacity: 0.4;
 }
 button:hover:enabled {
-  background: #edf4ee;
+  background: #edf4fb;
 }
 a {
-  color: #28735b;
+  color: #2563a6;
 }
 button:focus-visible,
 a:focus-visible,
 summary:focus-visible {
-  outline: 3px solid #90bfa8;
+  outline: 3px solid #8bb8e8;
   outline-offset: 3px;
 }
 input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid #dfe5dd;
+  border: 1px solid #dce4ee;
   border-radius: 7px;
   background: #fff;
   padding: 11px;
-  color: #304b42;
+  color: #30465f;
   outline: none;
 }
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #388a65;
-  box-shadow: 0 0 0 3px #388a6514;
+  border-color: #3b82c4;
+  box-shadow: 0 0 0 3px #3b82c414;
 }
 .app-shell {
   max-width: 1440px;
@@ -85,7 +85,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e2e7dd;
+  border-bottom: 1px solid #e1e7ef;
 }
 .header-actions {
   display: flex;
@@ -107,13 +107,13 @@ header {
   font-size: 23px;
   font-weight: 700;
   text-decoration: none;
-  color: #254c3c;
+  color: #244a73;
   display: flex;
   align-items: center;
   gap: 9px;
 }
 .logo > span {
-  background: #28553d;
+  background: #285f96;
   color: #fff;
   padding: 3px 10px;
   border-radius: 9px;
@@ -122,14 +122,14 @@ header {
 .logo small {
   font-size: 10px;
   letter-spacing: 2px;
-  color: #7c8b7f;
-  border-left: 1px solid #ccd6cc;
+  color: #7b8999;
+  border-left: 1px solid #ccd7e3;
   padding-left: 10px;
 }
 .github {
   font-size: 12px;
   text-decoration: none;
-  color: #67786d;
+  color: #66788b;
 }
 .intro {
   display: flex;
@@ -143,7 +143,7 @@ header {
 .eyebrow {
   font-size: 10px;
   letter-spacing: 2px;
-  color: #718977;
+  color: #71879d;
   font-weight: 600;
 }
 h1 {
@@ -153,19 +153,19 @@ h1 {
   font-weight: 600;
 }
 h1 span {
-  color: #4d805f;
+  color: #3478b8;
 }
 .intro p,
 .share p {
   font-size: 13px;
-  color: #7d897e;
+  color: #7c8998;
   margin: 0;
   line-height: 1.8;
 }
 .embed-badge {
   font-size: 12px;
-  color: #67816a;
-  background: #eaf0e5;
+  color: #5f7f9f;
+  background: #e8f0f8;
   padding: 10px 14px;
   border-radius: 24px;
 }
@@ -178,9 +178,9 @@ h1 span {
 .editor {
   padding: 23px;
   background: white;
-  border: 1px solid #e1e7dd;
+  border: 1px solid #e0e7ef;
   border-radius: 14px;
-  box-shadow: 0 4px 16px #254c3c03;
+  box-shadow: 0 4px 16px #244a7305;
 }
 .section-heading,
 .preview-heading {
@@ -200,7 +200,7 @@ h2 {
 .preview-heading > span {
   font-size: 9px;
   letter-spacing: 1.5px;
-  color: #8d9a8f;
+  color: #8998a8;
 }
 .field-label {
   display: block;
@@ -210,7 +210,7 @@ h2 {
 }
 .key-input {
   display: flex;
-  border: 1px solid #dfe5dd;
+  border: 1px solid #dce4ee;
   border-radius: 7px;
   overflow: hidden;
 }
@@ -221,12 +221,12 @@ h2 {
 .key-input button {
   border: 0;
   font-size: 10px;
-  color: #839184;
+  color: #8292a3;
 }
 .hint {
   font-size: 10px;
   line-height: 1.8;
-  color: #909b90;
+  color: #8e9cab;
   margin: 8px 0 0;
 }
 .stops-heading {
@@ -244,7 +244,7 @@ h3 {
   border: 0;
   padding: 0;
   font-size: 10px;
-  color: #5e8969;
+  color: #4d7fad;
 }
 .stop-row {
   display: flex;
@@ -253,15 +253,15 @@ h3 {
 }
 .stop-number {
   font-size: 11px;
-  background: #eaf1e6;
-  border: 1px solid #dbe6d6;
+  background: #e9f1fa;
+  border: 1px solid #d8e5f2;
   flex-shrink: 0;
   border-radius: 50%;
   width: 27px;
   height: 27px;
   display: grid;
   place-items: center;
-  color: #4a7156;
+  color: #47749f;
 }
 .stop-row input {
   min-width: 0;
@@ -291,11 +291,11 @@ h3 {
   left: 0;
   top: -10px;
   bottom: -10px;
-  border-left: 1px dashed #c9d8c7;
+  border-left: 1px dashed #c8d8e8;
 }
 .segment select {
   font-size: 10px;
-  background: #f6f8f3;
+  background: #f4f8fc;
   padding: 6px 3px;
   min-width: 0;
   border: 0;
@@ -303,18 +303,18 @@ h3 {
 .add-stop {
   margin-top: 17px;
   width: 100%;
-  border: 1px dashed #bdcdb7;
-  color: #5d8061;
+  border: 1px dashed #b8cde2;
+  color: #557fa8;
   font-size: 12px;
-  background: #fcfdf9;
+  background: #fbfdff;
 }
 .primary {
-  background: #2d5b42;
+  background: #2563a0;
   color: white;
-  border-color: #2d5b42;
+  border-color: #2563a0;
 }
 .primary:hover:enabled {
-  background: #214a34;
+  background: #1d4f82;
 }
 .preview-button {
   width: 100%;
@@ -338,16 +338,16 @@ h3 {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #789e70;
+  background: #5b93c8;
   margin-right: 8px;
 }
 .preview-canvas {
   height: 470px;
   position: relative;
-  border: 1px solid #dce4d7;
+  border: 1px solid #d9e4ef;
   border-radius: 12px;
   overflow: hidden;
-  background: #edf0e6;
+  background: #eaf1f8;
 }
 iframe {
   width: 100%;
@@ -369,7 +369,7 @@ iframe {
 }
 .river {
   fill: none;
-  stroke: #d5e6e2;
+  stroke: #d5e5f2;
   stroke-width: 63;
 }
 .streets {
@@ -381,20 +381,20 @@ iframe {
   stroke-width: 5;
 }
 .sample-route {
-  stroke: #7b9d75;
+  stroke: #6b9ac8;
   stroke-width: 4;
   stroke-dasharray: 7 6;
   fill: none;
 }
 .map-art circle {
-  fill: #f7faf3;
-  stroke: #6c9470;
+  fill: #f5f9fd;
+  stroke: #6292c0;
   stroke-width: 2;
 }
 .map-art text {
   font-size: 13px;
   text-anchor: middle;
-  fill: #4e6f51;
+  fill: #496f95;
 }
 .empty-card {
   position: absolute;
@@ -405,7 +405,7 @@ iframe {
   text-align: center;
   background: #fffffff0;
   border: 1px solid white;
-  box-shadow: 0 10px 40px #3857370d;
+  box-shadow: 0 10px 40px #294f760d;
   border-radius: 14px;
   padding: 25px 16px;
 }
@@ -414,21 +414,21 @@ iframe {
   place-items: center;
   width: 42px;
   height: 42px;
-  border: 1px solid #dce8d9;
+  border: 1px solid #dae7f2;
   border-radius: 50%;
-  color: #628361;
+  color: #5a82aa;
   font-size: 24px;
   margin-bottom: 15px;
 }
 .empty-card p {
   font-size: 12px;
-  color: #8b978a;
+  color: #8998a6;
   line-height: 1.9;
   margin: 10px 0;
 }
 .empty-card small {
   font-size: 9px;
-  color: #a4afa0;
+  color: #a1adba;
 }
 .legend {
   display: flex;
@@ -436,7 +436,7 @@ iframe {
   align-items: center;
   padding: 16px 2px;
   font-size: 10px;
-  color: #768576;
+  color: #748697;
 }
 .legend span {
   display: flex;
@@ -455,8 +455,8 @@ iframe {
   font-size: 9px;
 }
 .share {
-  background: #edf2e8;
-  border: 1px solid #e1e8dc;
+  background: #ebf2f9;
+  border: 1px solid #dfe8f1;
   border-radius: 12px;
   padding: 21px;
   display: flex;
@@ -479,7 +479,7 @@ iframe {
 }
 .share-actions button {
   font-size: 11px;
-  background: #f9fbf7;
+  background: #f8fbfe;
 }
 .share textarea {
   height: 60px;
@@ -497,7 +497,7 @@ footer {
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #97a18f;
+  color: #94a1af;
   padding: 28px 0;
 }
 .errors {
@@ -511,7 +511,7 @@ footer {
 .embed-map {
   position: fixed;
   inset: 0;
-  background: #eef2e9;
+  background: #ebf2f9;
 }
 .google-map {
   height: 100%;
@@ -527,11 +527,11 @@ footer {
 .map-controls button,
 .map-controls a {
   background: white;
-  border: 1px solid #dce3dc;
+  border: 1px solid #dbe3ed;
   padding: 10px 13px;
   border-radius: 8px;
   box-shadow: 0 2px 10px #0001;
-  color: #315c43;
+  color: #315f8e;
   font-size: 12px;
   text-decoration: none;
 }
@@ -554,21 +554,21 @@ footer {
 }
 .route-summary summary span {
   float: right;
-  color: #83917e;
+  color: #8292a3;
   font-size: 10px;
 }
 .muted {
   font-size: 10px;
-  color: #82917e;
+  color: #8191a2;
   line-height: 1.7;
 }
 .result {
   padding: 12px 0;
-  border-top: 1px solid #e5ebdf;
+  border-top: 1px solid #e3eaf2;
   font-size: 11px;
 }
 .result.selected {
-  background: #f1f5ee;
+  background: #eef4fa;
 }
 .result-title {
   display: flex;
@@ -583,7 +583,7 @@ footer {
 .result-place {
   margin-top: 8px;
   overflow-wrap: anywhere;
-  color: #768573;
+  color: #748697;
 }
 .result p {
   line-height: 1.7;
@@ -618,7 +618,7 @@ footer {
   line-height: 1.9;
 }
 .map-pin {
-  background: #315e45;
+  background: #2f6da6;
   color: white;
   border: 2px solid white;
   border-radius: 50% 50% 50% 0;
@@ -732,46 +732,46 @@ footer {
 }
 
 :root[data-theme="dark"] {
-  color: #dbe7e1;
-  background: #111815;
+  color: #dbe6f1;
+  background: #111923;
 }
 :root[data-theme="dark"] button,
 :root[data-theme="dark"] input,
 :root[data-theme="dark"] select,
 :root[data-theme="dark"] textarea {
-  color: #d8e4de;
-  background: #1b2621;
-  border-color: #35443d;
+  color: #d7e3ef;
+  background: #1a2633;
+  border-color: #344658;
 }
 :root[data-theme="dark"] button:hover:enabled {
-  background: #26372f;
+  background: #25384b;
 }
 :root[data-theme="dark"] a {
-  color: #8bc9aa;
+  color: #87bced;
 }
 :root[data-theme="dark"] input:focus,
 :root[data-theme="dark"] select:focus,
 :root[data-theme="dark"] textarea:focus {
-  border-color: #67ad8a;
-  box-shadow: 0 0 0 3px #67ad8a24;
+  border-color: #62a3df;
+  box-shadow: 0 0 0 3px #62a3df24;
 }
 :root[data-theme="dark"] header,
 :root[data-theme="dark"] footer {
-  border-color: #2b3932;
+  border-color: #2a3a4b;
 }
 :root[data-theme="dark"] .logo {
-  color: #d7e9df;
+  color: #d7e7f5;
 }
 :root[data-theme="dark"] .logo > span,
 :root[data-theme="dark"] .primary,
 :root[data-theme="dark"] .map-pin {
-  color: #f6fff9;
-  background: #347254;
-  border-color: #347254;
+  color: #f5faff;
+  background: #2f6fa8;
+  border-color: #2f6fa8;
 }
 :root[data-theme="dark"] .logo small {
-  color: #92a39a;
-  border-color: #45564e;
+  color: #91a3b5;
+  border-color: #445a6f;
 }
 :root[data-theme="dark"] .github,
 :root[data-theme="dark"] .intro p,
@@ -782,94 +782,94 @@ footer {
 :root[data-theme="dark"] .muted,
 :root[data-theme="dark"] .result-place,
 :root[data-theme="dark"] .route-summary summary span {
-  color: #94a79d;
+  color: #93a7ba;
 }
 :root[data-theme="dark"] .eyebrow,
 :root[data-theme="dark"] .section-heading > span,
 :root[data-theme="dark"] .preview-heading > span,
 :root[data-theme="dark"] .key-input button,
 :root[data-theme="dark"] .empty-card small {
-  color: #82978c;
+  color: #8097ad;
 }
 :root[data-theme="dark"] .embed-badge,
 :root[data-theme="dark"] .stop-number {
-  color: #a6d2b9;
-  background: #22332a;
-  border-color: #3b5045;
+  color: #a3cbed;
+  background: #213448;
+  border-color: #3a526a;
 }
 :root[data-theme="dark"] .editor,
 :root[data-theme="dark"] .empty-card,
 :root[data-theme="dark"] .map-controls a,
 :root[data-theme="dark"] .route-summary,
 :root[data-theme="dark"] .map-error {
-  background: #18221d;
-  border-color: #303f38;
+  background: #172330;
+  border-color: #2f4255;
   box-shadow: 0 8px 28px #0005;
 }
 :root[data-theme="dark"] .key-input {
-  border-color: #35443d;
+  border-color: #344658;
 }
 :root[data-theme="dark"] .text-button,
 :root[data-theme="dark"] .compass {
-  color: #91c3a5;
+  color: #8bb9df;
 }
 :root[data-theme="dark"] .segment-line {
-  border-color: #475b50;
+  border-color: #465e75;
 }
 :root[data-theme="dark"] .segment select {
-  background: #202d27;
+  background: #1f2e3e;
 }
 :root[data-theme="dark"] .add-stop {
-  color: #9bc7ad;
-  background: #17221d;
-  border-color: #4a6255;
+  color: #98c1e4;
+  background: #162331;
+  border-color: #49657e;
 }
 :root[data-theme="dark"] .primary:hover:enabled {
-  background: #428463;
+  background: #3d82bd;
 }
 :root[data-theme="dark"] .preview-canvas,
 :root[data-theme="dark"] .embed-map {
-  background: #17231f;
-  border-color: #33443b;
+  background: #162431;
+  border-color: #32475b;
 }
 :root[data-theme="dark"] .river {
-  stroke: #243b39;
+  stroke: #233c50;
 }
 :root[data-theme="dark"] .streets {
-  stroke: #2d3a34;
+  stroke: #2c3c4c;
 }
 :root[data-theme="dark"] .sample-route {
-  stroke: #7eaa80;
+  stroke: #78a9d3;
 }
 :root[data-theme="dark"] .map-art circle {
-  fill: #1d2a24;
-  stroke: #7ba27e;
+  fill: #1c2b39;
+  stroke: #75a3ca;
 }
 :root[data-theme="dark"] .map-art text {
-  fill: #b6ceb8;
+  fill: #b3cee5;
 }
 :root[data-theme="dark"] .empty-card p {
-  color: #9aada3;
+  color: #98adbf;
 }
 :root[data-theme="dark"] .compass {
-  border-color: #405449;
+  border-color: #3f5870;
 }
 :root[data-theme="dark"] .share {
-  background: #18261f;
-  border-color: #33463b;
+  background: #172738;
+  border-color: #324a60;
 }
 :root[data-theme="dark"] .share-actions button {
-  background: #202e27;
+  background: #1f3041;
 }
 :root[data-theme="dark"] .errors {
   color: #ffc09b;
   background: #3a261d;
 }
 :root[data-theme="dark"] .result {
-  border-color: #34443c;
+  border-color: #33475b;
 }
 :root[data-theme="dark"] .result.selected {
-  background: #223229;
+  background: #213448;
 }
 :root[data-theme="dark"] .warning {
   color: #e2aa73;
@@ -914,11 +914,11 @@ footer {
   touch-action: none;
   user-select: none;
   padding: 10px 3px;
-  color: #82927e;
+  color: #8193a6;
   flex-shrink: 0;
 }
 .drag-handle:focus-visible {
-  outline: 3px solid #90bfa8;
+  outline: 3px solid #8bb8e8;
   border-radius: 4px;
 }
 .stop.dragging {
@@ -928,7 +928,7 @@ footer {
   cursor: grabbing;
 }
 .stop.drop-target {
-  outline: 2px solid #90bfa8;
+  outline: 2px solid #8bb8e8;
   border-radius: 7px;
 }
 .result-title {
@@ -940,5 +940,5 @@ footer {
   overflow-wrap: anywhere;
 }
 .route-arrow {
-  color: #82927e;
+  color: #8193a6;
 }

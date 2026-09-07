@@ -86,7 +86,7 @@ export function MapView({ config }: { config: Config }) {
         map: map.current,
         path: [position, next],
         geodesic: false,
-        strokeColor: "#315e45",
+        strokeColor: "#2f6da6",
         strokeWeight: selected === i ? 8 : 4,
         strokeOpacity: selected === null || selected === i ? 0.95 : 0.35,
       });
