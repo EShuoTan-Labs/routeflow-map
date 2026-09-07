@@ -522,6 +522,9 @@ footer {
   inset: 0;
   border: 0;
 }
+.route-frame[hidden] {
+  display: none;
+}
 .map-controls {
   position: absolute;
   left: 12px;
