@@ -529,6 +529,10 @@ footer {
   display: flex;
   gap: 8px;
 }
+.map-controls.route-controls {
+  left: auto;
+  right: 12px;
+}
 .map-controls button,
 .map-controls a {
   background: white;

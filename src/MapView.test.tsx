@@ -98,17 +98,23 @@ describe("pin map", () => {
     expect(url.searchParams.get("origin")).toBe("0,0");
     expect(url.searchParams.get("destination")).toBe("0,1");
     expect(url.searchParams.get("center")).toBe("0,0.5");
-    fireEvent.doubleClick(first);
-    expect(document.querySelector("iframe")).toBe(frame);
+    expect(screen.queryByRole("link", { name: "编辑行程 ↗" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "重置缩放" })).toBeNull();
+    expect(document.querySelector("details")?.hidden).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "返回总览" }));
     fireEvent.doubleClick(
       screen.getByRole("button", { name: "2 0,1 到 3 1,1" }),
     );
     expect(frame.hidden).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "返回总览" }));
     fireEvent.doubleClick(first);
+    expect(document.querySelector("iframe")).toBe(frame);
     expect(frame.hidden).toBe(false);
     const fitCalls = maps[0].fitBounds.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "返回总览" }));
     expect(frame.hidden).toBe(true);
+    expect(document.querySelector("details")?.hidden).toBe(false);
+    expect(screen.getByRole("link", { name: "编辑行程 ↗" })).toBeTruthy();
     expect(maps).toHaveLength(1);
     expect(maps[0].fitBounds).toHaveBeenCalledTimes(fitCalls);
     fireEvent.keyDown(first, { key: "Enter" });

@@ -187,7 +187,7 @@ export function MapView({ config }: { config: Config }) {
           allowFullScreen
         />
       ))}
-      <div className="map-controls">
+      <div className={`map-controls${activeRoute ? " route-controls" : ""}`}>
         {activeRoute ? (
           <button
             onClick={() => {
@@ -205,15 +205,17 @@ export function MapView({ config }: { config: Config }) {
             重置缩放
           </button>
         )}
-        <a
-          href={makeUrl(config, window.location.href, "editor")}
-          target="_blank"
-          rel="noreferrer"
-        >
-          编辑行程 ↗
-        </a>
+        {!activeRoute && (
+          <a
+            href={makeUrl(config, window.location.href, "editor")}
+            target="_blank"
+            rel="noreferrer"
+          >
+            编辑行程 ↗
+          </a>
+        )}
       </div>
-      {error && (
+      {error && !activeRoute && (
         <div className="map-error" role="alert">
           <strong>地图暂时无法加载</strong>
           <p>{error}</p>
@@ -228,6 +230,7 @@ export function MapView({ config }: { config: Config }) {
       )}
       <details
         className="route-summary"
+        hidden={!!activeRoute}
         open={selected !== null || undefined}
         onToggle={(e) => {
           if (!e.currentTarget.open) setSelected(null);
