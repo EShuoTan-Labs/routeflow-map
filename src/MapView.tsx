@@ -1,36 +1,40 @@
 import { useEffect, useRef, useState } from "react";
-import { type Config, effective, modes, makeUrl } from "./config";
+import { type Config, makeUrl } from "./config";
 import { loadGoogle } from "./google";
-import { RouteRunner, type Result, type Compute } from "./routes";
-export const colors = {
-  transit: "#5468df",
-  walking: "#c88736",
-  driving: "#2b8276",
-  bicycling: "#b45680",
-};
+import {
+  PointRunner,
+  distanceKm,
+  type PointResult,
+  type Locate,
+} from "./routes";
 export function MapView({ config }: { config: Config }) {
   const host = useRef<HTMLDivElement>(null),
-    map = useRef<any>(null),
-    overlays = useRef<any[]>([]);
-  const runner = useRef(new RouteRunner()),
-    compute = useRef<Compute | null>(null);
-  const [results, setResults] = useState<Record<number, Result>>({});
+    map = useRef<any>(null);
+  const runner = useRef(new PointRunner()),
+    locate = useRef<Locate | null>(null);
+  const [results, setResults] = useState<Record<number, PointResult>>({});
   const [error, setError] = useState(""),
     [selected, setSelected] = useState<number | null>(null);
-  const update = (i: number, result: Result) =>
+  const update = (i: number, result: PointResult) =>
     setResults((prev) => ({ ...prev, [i]: result }));
   useEffect(() => {
     let disposed = false;
+    setResults({});
+    setError("");
+    setSelected(null);
+    map.current = null;
+    locate.current = null;
     loadGoogle(config.key)
       .then(async () => {
-        const [{ Map }, { Route }] = await Promise.all([
+        const [{ Map }] = await Promise.all([
           window.google.maps.importLibrary("maps"),
-          window.google.maps.importLibrary("routes"),
           window.google.maps.importLibrary("marker"),
         ]);
         if (disposed) return;
-        window.gm_authFailure = () =>
-          setError("API Key 验证失败，请检查密钥、计费和网站域名限制。");
+        window.gm_authFailure = () => {
+          if (!disposed)
+            setError("API Key 验证失败，请检查密钥、计费和网站域名限制。");
+        };
         map.current = new Map(host.current, {
           center: { lat: 35.68, lng: 139.76 },
           zoom: 11,
@@ -40,8 +44,17 @@ export function MapView({ config }: { config: Config }) {
           fullscreenControl: true,
           gestureHandling: "cooperative",
         });
-        compute.current = (request) => Route.computeRoutes(request);
-        await runner.current.run(config, compute.current, update);
+        let geocoder: Promise<any> | undefined;
+        locate.current = async (address) => {
+          geocoder ??= window.google.maps
+            .importLibrary("geocoding")
+            .then(({ Geocoder }: any) => new Geocoder());
+          const { results } = await (await geocoder).geocode({ address });
+          const position = results[0]?.geometry?.location;
+          if (!position) throw new Error("ZERO_RESULTS");
+          return { lat: position.lat(), lng: position.lng() };
+        };
+        await runner.current.run(config.points, locate.current, update);
       })
       .catch((e) => {
         if (!disposed) setError(e.message);
@@ -49,63 +62,76 @@ export function MapView({ config }: { config: Config }) {
     return () => {
       disposed = true;
       runner.current.cancel();
-      overlays.current.forEach((o) => {
-        if (o.setMap) o.setMap(null);
-        else o.map = null;
-      });
     };
   }, [config]);
   useEffect(() => {
     if (!map.current) return;
-    overlays.current.forEach((o) => {
-      if (o.setMap) o.setMap(null);
-      else o.map = null;
-    });
-    overlays.current = [];
     const g = window.google.maps,
-      bounds = new g.LatLngBounds(),
-      markers = new Map<number, any>();
-    Object.entries(results).forEach(([key, result]) => {
-      const i = Number(key),
-        path = result.route?.path;
-      if (!path?.length) return;
-      // Route.path uses LatLngAltitude values (numeric lat/lng), compatible with LatLngLiteral.
-      const line = new g.Polyline({
-        map: map.current,
-        path,
-        strokeColor: colors[effective(config, i).mode],
-        strokeWeight: selected === i ? 8 : 5,
-        strokeOpacity: selected === null || selected === i ? 0.95 : 0.4,
-      });
-      line.addListener("click", () => setSelected(i));
-      overlays.current.push(line);
-      path.forEach((p) => bounds.extend(p));
-      markers.set(i, path[0]);
-      markers.set(i + 1, path[path.length - 1]);
-    });
-    markers.forEach((position, i) => {
+      overlays: any[] = [],
+      listeners: any[] = [];
+    config.points.forEach((point, i) => {
+      const position = results[i]?.position;
+      if (!position) return;
       const el = document.createElement("div");
       el.className = "map-pin";
-      el.textContent = String(i + 1);
-      overlays.current.push(
+      const label = document.createElement("span");
+      label.textContent = String(i + 1);
+      el.append(label);
+      overlays.push(
         new g.marker.AdvancedMarkerElement({
           map: map.current,
           position,
           content: el,
-          title: `${i + 1}. ${config.points[i]}`,
+          title: `${i + 1}. ${point}`,
         }),
       );
+      const next = results[i + 1]?.position;
+      if (!next) return;
+      const line = new g.Polyline({
+        map: map.current,
+        path: [position, next],
+        geodesic: false,
+        strokeColor: "#315e45",
+        strokeWeight: selected === i ? 8 : 4,
+        strokeOpacity: selected === null || selected === i ? 0.95 : 0.35,
+      });
+      listeners.push(line.addListener("click", () => setSelected(i)));
+      overlays.push(line);
     });
-    if (!bounds.isEmpty() && selected === null)
-      map.current.fitBounds(bounds, 60);
+    return () => {
+      listeners.forEach((listener) => listener?.remove());
+      overlays.forEach((o) => {
+        if (o.setMap) o.setMap(null);
+        else o.map = null;
+      });
+    };
   }, [results, selected, config]);
-  const busy = Object.values(results).some((r) => r.status === "loading");
+  useEffect(() => {
+    if (!map.current) return;
+    const positions = Object.values(results).flatMap((r) =>
+      r.position ? [r.position] : [],
+    );
+    if (!positions.length) return;
+    const bounds = new window.google.maps.LatLngBounds();
+    positions.forEach((p) => bounds.extend(p));
+    if (
+      positions.every(
+        (p) => p.lat === positions[0].lat && p.lng === positions[0].lng,
+      )
+    ) {
+      map.current.setCenter(positions[0]);
+      map.current.setZoom(14);
+    } else map.current.fitBounds(bounds, 60);
+  }, [results]);
+  const busy =
+    Object.keys(results).length < config.points.length ||
+    Object.values(results).some((r) => r.status === "loading");
   return (
     <main className="embed-map">
       <div className="google-map" ref={host} aria-label="行程地图" />
       <div className="map-brand">
         ↗ <b>RouteFlow</b>
-        <span>旅途，每一段都有方向</span>
+        <span>图钉之间，串起旅程</span>
       </div>
       {error && (
         <div className="map-error" role="alert">
@@ -128,91 +154,59 @@ export function MapView({ config }: { config: Config }) {
         }}
       >
         <summary>
-          路线详情 · {config.points.length - 1} 段{" "}
-          <span>{busy ? "查询中…" : "展开查看"}</span>
+          行程连线 · {config.points.length} 个图钉
+          <span>{error ? "加载失败" : busy ? "定位中…" : "展开查看"}</span>
         </summary>
-        <p className="muted">
-          各段按当前时间独立查询，交通偏好以实际返回线路为准。
-        </p>
+        <p className="muted">图钉按地点顺序直线相连，距离为两点间直线距离。</p>
+        {config.points.map(
+          (point, i) =>
+            results[i]?.status === "error" && (
+              <article className="result" key={`error-${i}`}>
+                <strong>
+                  地点 {i + 1} · {point}
+                </strong>
+                <p role="alert">{results[i].error}</p>
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    locate.current &&
+                    runner.current.run(config.points, locate.current, update, [
+                      i,
+                    ])
+                  }
+                >
+                  重试地点 {i + 1}
+                </button>
+              </article>
+            ),
+        )}
         {config.points.slice(1).map((p, i) => {
-          const r = results[i];
+          const a = results[i],
+            b = results[i + 1];
           return (
             <article
               className={`result ${selected === i ? "selected" : ""}`}
               key={i}
             >
               <button className="result-title" onClick={() => setSelected(i)}>
-                <i style={{ background: colors[effective(config, i).mode] }} />
-                {i + 1} → {i + 2} · {modes[effective(config, i).mode]}
+                {i + 1} → {i + 2}
               </button>
               <div className="result-place">
                 {config.points[i]} → {p}
               </div>
               <p>
-                {!r || r.status === "loading"
-                  ? "正在寻找路线…"
-                  : r.status === "error"
-                    ? r.error
-                    : `${((r.route?.distanceMeters || 0) / 1000).toFixed(1)} 公里 · 约 ${Math.ceil((r.route?.durationMillis || 0) / 60000)} 分钟`}
+                {a?.position && b?.position
+                  ? `直线距离 ${distanceKm(a.position, b.position).toFixed(1)} 公里`
+                  : a?.status === "error" || b?.status === "error"
+                    ? "等待端点定位成功后连接"
+                    : error
+                      ? "等待地图加载"
+                      : "正在定位地点…"}
               </p>
-              {r?.route?.legs
-                ?.flatMap((l) => l.steps || [])
-                .filter((s) => s.transitDetails)
-                .map((s, j) => (
-                  <div className="transit-line" key={j}>
-                    {s.transitDetails?.transitLine?.shortName ||
-                      s.transitDetails?.transitLine?.name}
-                    {s.transitDetails?.transitLine?.agencies?.map((a, k) => (
-                      <span key={k}>
-                        {" "}
-                        ·{" "}
-                        {a.url && /^https?:\/\//.test(String(a.url)) ? (
-                          <a
-                            href={String(a.url)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {a.name}
-                          </a>
-                        ) : (
-                          a.name
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              {r?.route?.warnings?.map((w, j) => (
-                <p className="warning" key={j}>
-                  {w}
-                </p>
-              ))}
-              {r?.status === "error" && (
-                <button
-                  disabled={busy}
-                  onClick={() =>
-                    compute.current &&
-                    runner.current.run(config, compute.current, update, [i])
-                  }
-                >
-                  重试此段
-                </button>
-              )}
             </article>
           );
         })}
       </details>
-      {Object.values(results).flatMap((r) => r.route?.warnings || []).length >
-        0 && (
-        <div className="map-warnings">
-          {[
-            ...new Set(
-              Object.values(results).flatMap((r) => r.route?.warnings || []),
-            ),
-          ].map((w) => (
-            <p key={w}>{w}</p>
-          ))}
-        </div>
-      )}
     </main>
   );
 }

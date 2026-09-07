@@ -618,9 +618,10 @@ footer {
   background: #315e45;
   color: white;
   border: 2px solid white;
-  border-radius: 50%;
-  width: 29px;
-  height: 29px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   box-shadow: 0 2px 5px #0003;
@@ -894,4 +895,12 @@ footer {
   .github {
     display: none;
   }
+}
+
+.map-pin span {
+  transform: rotate(45deg);
+  font-weight: 600;
+}
+.map-caption {
+  margin: 12px 2px 18px;
 }

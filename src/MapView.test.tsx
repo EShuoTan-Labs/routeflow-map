@@ -10,121 +10,124 @@ import { afterEach, describe, it, expect, vi } from "vitest";
 import { MapView } from "./MapView";
 import { defaults } from "./config";
 vi.mock("./google", () => ({ loadGoogle: vi.fn(async () => {}) }));
-const query = vi.fn();
-const lines: { options: any; listener?: () => void }[] = [];
+const geocode = vi.fn(),
+  imports = vi.fn();
+const lines: any[] = [],
+  markers: any[] = [];
 class FakeMap {
   fitBounds = vi.fn();
+  setCenter = vi.fn();
+  setZoom = vi.fn();
 }
 class Bounds {
-  empty = true;
-  extend() {
-    this.empty = false;
-  }
-  isEmpty() {
-    return this.empty;
-  }
+  extend() {}
 }
 class Polyline {
-  listener?: () => void;
+  map: any;
   constructor(public options: any) {
+    this.map = options.map;
     lines.push(this);
   }
-  addListener(_name: string, listener: () => void) {
-    this.listener = listener;
+  addListener() {
+    return { remove: vi.fn() };
   }
-  setMap() {}
+  setMap(map: any) {
+    this.map = map;
+  }
 }
 class Marker {
-  constructor(public options: any) {}
+  map: any;
+  constructor(public options: any) {
+    this.map = options.map;
+    markers.push(this);
+  }
 }
-function setup() {
+function setup(points = ["0,0", "0,1", "1,1"]) {
+  imports.mockImplementation(async (name: string) => {
+    if (name === "maps") return { Map: FakeMap };
+    if (name === "marker") return {};
+    if (name === "geocoding")
+      return {
+        Geocoder: class {
+          geocode = geocode;
+        },
+      };
+    throw new Error(`Unexpected library: ${name}`);
+  });
   window.google = {
     maps: {
-      importLibrary: async () => ({
-        Map: FakeMap,
-        Route: { computeRoutes: query },
-      }),
+      importLibrary: imports,
       LatLngBounds: Bounds,
       Polyline,
       marker: { AdvancedMarkerElement: Marker },
     },
   };
-  return render(
-    <MapView
-      config={{
-        ...defaults,
-        key: "mock-only",
-        points: ["东京站", "浅草寺", "晴空塔"],
-        segments: { "1": { mode: "walking" } },
-      }}
-    />,
-  );
+  return render(<MapView config={{ ...defaults, key: "mock-only", points }} />);
 }
+const position = (lat: number, lng: number) => ({
+  results: [{ geometry: { location: { lat: () => lat, lng: () => lng } } }],
+});
 afterEach(() => {
   cleanup();
-  query.mockReset();
+  vi.clearAllMocks();
+  geocode.mockReset();
   lines.length = 0;
+  markers.length = 0;
 });
-const route = {
-  path: [
-    { lat: 35, lng: 139 },
-    { lat: 35.1, lng: 139.1 },
-  ],
-  distanceMeters: 1500,
-  durationMillis: 600000,
-  legs: [
-    {
-      steps: [
-        {
-          transitDetails: {
-            transitLine: {
-              shortName: "银座线",
-              agencies: [
-                {
-                  name: "Tokyo Metro",
-                  url: new URL("https://www.tokyometro.jp/"),
-                },
-              ],
-            },
-          },
-        },
-      ],
-    },
-  ],
-};
-describe("embedded map with simulated Google SDK", () => {
-  it("renders mixed routes, numbered markers and transit attribution, and selects a route", async () => {
-    query.mockResolvedValue({ routes: [route] });
-    setup();
-    await waitFor(() =>
-      expect(screen.getAllByText("1.5 公里 · 约 10 分钟")).toHaveLength(2),
-    );
-    expect(query.mock.calls.map((c) => c[0].travelMode)).toEqual([
-      "TRANSIT",
-      "WALKING",
-    ]);
+describe("pin map", () => {
+  it("draws numbered pins and two-endpoint straight lines without service requests", async () => {
+    const view = setup();
+    await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(3));
+    expect(geocode).not.toHaveBeenCalled();
+    expect(imports.mock.calls.map((c) => c[0])).toEqual(["maps", "marker"]);
     expect(
-      screen
-        .getAllByRole("link", { name: "Tokyo Metro" })[0]
-        .getAttribute("href"),
-    ).toBe("https://www.tokyometro.jp/");
-    fireEvent.click(screen.getByRole("button", { name: "1 → 2 · 公共交通" }));
+      markers.filter((m) => m.map).map((m) => m.options.content.textContent),
+    ).toEqual(["1", "2", "3"]);
+    expect(lines.filter((l) => l.map).map((l) => l.options.path)).toEqual([
+      [
+        { lat: 0, lng: 0 },
+        { lat: 0, lng: 1 },
+      ],
+      [
+        { lat: 0, lng: 1 },
+        { lat: 1, lng: 1 },
+      ],
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: "1 → 2" }));
     expect(document.querySelector("details")?.open).toBe(true);
-    expect(lines.some((l) => l.options.strokeWeight === 8)).toBe(true);
+    expect(
+      lines.filter((l) => l.map).some((l) => l.options.strokeWeight === 8),
+    ).toBe(true);
+    view.unmount();
+    expect(markers.filter((m) => m.map)).toHaveLength(0);
+    expect(lines.filter((l) => l.map)).toHaveLength(0);
   });
-  it("keeps a successful leg visible and retries only the failed leg", async () => {
-    query
-      .mockResolvedValueOnce({ routes: [route] })
-      .mockRejectedValueOnce(new Error("no route"));
-    setup();
-    const retry = await screen.findByRole("button", { name: "重试此段" });
-    expect(screen.getByText("1.5 公里 · 约 10 分钟")).toBeTruthy();
-    query.mockResolvedValueOnce({ routes: [route] });
+  it("keeps isolated pins and never bridges a failed middle point; retry restores adjacent lines", async () => {
+    geocode.mockRejectedValueOnce(new Error("ZERO_RESULTS"));
+    setup(["0,0", "Missing", "1,1"]);
+    const retry = await screen.findByRole("button", { name: "重试地点 2" });
+    expect(markers.filter((m) => m.map)).toHaveLength(2);
+    expect(lines.filter((l) => l.map)).toHaveLength(0);
+    geocode.mockResolvedValueOnce(position(0, 1));
     fireEvent.click(retry);
-    await waitFor(() =>
-      expect(screen.getAllByText("1.5 公里 · 约 10 分钟")).toHaveLength(2),
+    await waitFor(() => expect(lines.filter((l) => l.map)).toHaveLength(2));
+    expect(geocode).toHaveBeenCalledTimes(2);
+  });
+  it("clears old geometry when configuration changes", async () => {
+    const view = setup();
+    await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(3));
+    view.rerender(
+      <MapView
+        config={{ ...defaults, key: "mock-only", points: ["2,2", "3,3"] }}
+      />,
     );
-    expect(query).toHaveBeenCalledTimes(3);
-    expect(query.mock.calls[2][0].origin).toBe("浅草寺");
+    await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(2));
+    expect(lines.filter((l) => l.map)).toHaveLength(1);
+    expect(markers.filter((m) => m.map).map((m) => m.options.position)).toEqual(
+      [
+        { lat: 2, lng: 2 },
+        { lat: 3, lng: 3 },
+      ],
+    );
   });
 });

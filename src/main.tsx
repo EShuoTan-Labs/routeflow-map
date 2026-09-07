@@ -1,18 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { useEffect, useState } from "react";
-import {
-  parse,
-  validate,
-  makeUrl,
-  modes,
-  transitModes,
-  effective,
-  type Config,
-  type Mode,
-  type Segment,
-  type TransitMode,
-} from "./config";
-import { MapView, colors } from "./MapView";
+import { parse, validate, makeUrl, type Config } from "./config";
+import { MapView } from "./MapView";
 import { loadApiKey, saveApiKey } from "./storage";
 import "./style.css";
 const parsed = parse(window.location.search);
@@ -50,13 +39,6 @@ function App() {
     setShare("");
     setCopied("");
   };
-  const segment = (i: number, patch: Segment) =>
-    set({
-      segments: {
-        ...config.segments,
-        [i]: { ...config.segments[i], ...patch },
-      },
-    });
   function previewRoute() {
     const issues = validate(config);
     setErrors(issues);
@@ -72,13 +54,7 @@ function App() {
     set({ points });
   }
   function remove(i: number) {
-    const segments: Config["segments"] = {};
-    Object.entries(config.segments).forEach(([key, value]) => {
-      const n = Number(key);
-      if (n < i - 1) segments[n] = value;
-      else if (n > i) segments[n - 1] = value;
-    });
-    set({ points: config.points.filter((_, j) => j !== i), segments });
+    set({ points: config.points.filter((_, j) => j !== i) });
   }
   async function copy(text: string, kind: string) {
     try {
@@ -108,7 +84,7 @@ function App() {
               "editor",
             )}
           >
-            打开路线编辑器
+            打开地图编辑器
           </a>
         </div>
       );
@@ -144,14 +120,14 @@ function App() {
       <section className="intro">
         <div>
           <div className="eyebrow">A LITTLE MAP. A BIG JOURNEY.</div>
-          <p>步行穿过街巷，乘列车去下一站。为你的旅行文档，绘制每一段路。</p>
+          <p>标记途经地点，用直线串起旅程。为你的旅行文档，留一张行程地图。</p>
         </div>
         <span className="embed-badge">◇ 为 Notion 等文档而生</span>
       </section>
       <div className="workspace">
         <aside className="editor">
           <div className="section-heading">
-            <h2>规划路线</h2>
+            <h2>编排行程</h2>
             <span>01 — BUILD</span>
           </div>
           <label className="field-label" htmlFor="key">
@@ -174,22 +150,9 @@ function App() {
             </button>
           </div>
           <p className="hint">
-            密钥会保存在此浏览器，并随嵌入链接共享；请设置网站域名限制。
+            底图使用 Maps JavaScript API；地址定位使用 Geocoding
+            API。密钥保存在此浏览器并随嵌入链接共享，请设置域名限制。
           </p>
-          <label className="field-label" htmlFor="default-mode">
-            默认交通方式
-          </label>
-          <select
-            id="default-mode"
-            value={config.mode}
-            onChange={(e) => set({ mode: e.target.value as Mode })}
-          >
-            {Object.entries(modes).map(([m, title]) => (
-              <option key={m} value={m}>
-                {title}
-              </option>
-            ))}
-          </select>
           <div className="stops-heading">
             <h3>途经地点</h3>
             <button
@@ -201,7 +164,6 @@ function App() {
                     "201 Marine Dr, San Francisco, CA 94129",
                     "Palace of Fine Arts, San Francisco, CA 94123",
                   ],
-                  segments: { "1": { mode: "walking" } },
                 })
               }
             >
@@ -253,51 +215,6 @@ function App() {
                     </button>
                   </div>
                 </div>
-                {i < config.points.length - 1 && (
-                  <div className="segment">
-                    <span className="segment-line" />
-                    <select
-                      aria-label={`第 ${i + 1} 段交通方式`}
-                      value={config.segments[i]?.mode || ""}
-                      onChange={(e) =>
-                        segment(i, {
-                          mode: (e.target.value || undefined) as
-                            Mode | undefined,
-                          transitModes: undefined,
-                        })
-                      }
-                    >
-                      <option value="">
-                        默认 · {modes[config.mode] || "请选择"}
-                      </option>
-                      {Object.entries(modes).map(([m, title]) => (
-                        <option value={m} key={m}>
-                          {title}
-                        </option>
-                      ))}
-                    </select>
-                    {effective(config, i).mode === "transit" && (
-                      <select
-                        aria-label={`第 ${i + 1} 段公交偏好`}
-                        value={config.segments[i]?.transitModes?.[0] || ""}
-                        onChange={(e) =>
-                          segment(i, {
-                            transitModes: e.target.value
-                              ? [e.target.value as TransitMode]
-                              : undefined,
-                          })
-                        }
-                      >
-                        <option value="">公交偏好 · 不限</option>
-                        {Object.entries(transitModes).map(([m, title]) => (
-                          <option key={m} value={m}>
-                            {title}优先
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -308,7 +225,7 @@ function App() {
             ＋ 添加途经点
           </button>
           <p className="hint">
-            各段可单独设置交通。调整顺序后，交通设置仍对应路段序号。
+            图钉按列表顺序直线相连，拖动地图可查看各个地点。
           </p>
           {errors.length > 0 && (
             <ul className="errors" role="alert">
@@ -318,7 +235,7 @@ function App() {
             </ul>
           )}
           <button className="primary preview-button" onClick={previewRoute}>
-            预览路线 <span>→</span>
+            预览地图 <span>→</span>
           </button>
         </aside>
         <section className="preview-area">
@@ -352,10 +269,7 @@ function App() {
                     <path d="M0 90L700 290M0 240L700 440M100 0L20 500M290 0L200 500M600 0L510 500M0 390L700 30" />
                     <path d="M0 160L700 360M0 310L700 110M200 0L110 500M690 0L600 500" />
                   </g>
-                  <path
-                    className="sample-route"
-                    d="M180 330L230 240L360 276L475 158"
-                  />
+                  <path className="sample-route" d="M180 330L360 276L475 158" />
                   {[
                     [180, 330],
                     [360, 276],
@@ -373,24 +287,16 @@ function App() {
                   <span className="compass">↗</span>
                   <h2>下一站，去哪里？</h2>
                   <p>
-                    添加密钥与地点，点击「预览路线」
+                    添加密钥与地点，点击「预览地图」
                     <br />
                     你的旅程将在这里展开。
                   </p>
-                  <small>背景为路线示意图</small>
+                  <small>背景为行程示意图</small>
                 </div>
               </div>
             )}
           </div>
-          <div className="legend">
-            {Object.entries(modes).map(([m, title]) => (
-              <span key={m}>
-                <i style={{ background: colors[m as Mode] }} />
-                {title}
-              </span>
-            ))}
-            <small>公共交通按查询时刻独立规划</small>
-          </div>
+          <p className="hint map-caption">编号图钉 · 按顺序直线连接</p>
           <section className="share">
             <div>
               <div className="eyebrow">03 — SHARE</div>
@@ -420,7 +326,7 @@ function App() {
       </div>
       <footer>
         <span>RouteFlow Map · 为每一段旅途留一张地图</span>
-        <span>Google Maps 提供地图与路线数据</span>
+        <span>Google Maps 提供底图与地点定位</span>
       </footer>
     </div>
   );
