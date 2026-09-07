@@ -17,6 +17,7 @@ const lines: any[] = [],
   maps: FakeMap[] = [];
 class FakeMap {
   getZoom = vi.fn(() => 15);
+  getCenter = vi.fn(() => ({ lat: (): number => 0.5, lng: (): number => 0.5 }));
   fitBounds = vi.fn();
   setCenter = vi.fn();
   setZoom = vi.fn();
@@ -97,7 +98,7 @@ describe("pin map", () => {
     expect(url.searchParams.get("zoom")).toBe("15");
     expect(url.searchParams.get("origin")).toBe("0,0");
     expect(url.searchParams.get("destination")).toBe("0,1");
-    expect(url.searchParams.get("center")).toBe("0,0.5");
+    expect(url.searchParams.get("center")).toBe("0.5,0.5");
     expect(screen.queryByRole("link", { name: "编辑行程 ↗" })).toBeNull();
     expect(screen.queryByRole("button", { name: "重置缩放" })).toBeNull();
     expect(document.querySelector("details")?.hidden).toBe(true);
@@ -120,6 +121,15 @@ describe("pin map", () => {
     fireEvent.keyDown(first, { key: "Enter" });
     expect(document.querySelector("iframe")).toBe(frame);
     expect(frame.hidden).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "返回总览" }));
+    maps[0].getCenter.mockReturnValue({ lat: () => 2, lng: () => 3 });
+    fireEvent.doubleClick(first);
+    const panned = [...document.querySelectorAll("iframe")].find(
+      (f) => !f.hidden,
+    )!;
+    expect(panned).not.toBe(frame);
+    expect(new URL(panned.src).searchParams.get("center")).toBe("2,3");
+    expect(new URL(panned.src).searchParams.get("zoom")).toBe("15");
     fireEvent.click(screen.getByRole("button", { name: "返回总览" }));
     maps[0].getZoom.mockReturnValue(12);
     fireEvent.doubleClick(first);

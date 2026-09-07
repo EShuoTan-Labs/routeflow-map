@@ -143,13 +143,9 @@ export function MapView({ config }: { config: Config }) {
       ),
       language: "zh-CN",
     });
-    if (start && end) {
-      // Use the short arc midpoint for segments crossing the date line.
-      const delta = ((end.lng - start.lng + 540) % 360) - 180;
-      query.set(
-        "center",
-        `${(start.lat + end.lat) / 2},${((start.lng + delta / 2 + 540) % 360) - 180}`,
-      );
+    const center = map.current.getCenter();
+    if (center) {
+      query.set("center", `${center.lat()},${center.lng()}`);
     }
     const url = `https://www.google.com/maps/embed/v1/directions?${query}`;
     setSelected(i);
