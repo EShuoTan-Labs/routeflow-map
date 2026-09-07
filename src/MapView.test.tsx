@@ -16,6 +16,7 @@ const lines: any[] = [],
   markers: any[] = [],
   maps: FakeMap[] = [];
 class FakeMap {
+  getZoom = vi.fn(() => 15);
   fitBounds = vi.fn();
   setCenter = vi.fn();
   setZoom = vi.fn();
@@ -82,6 +83,47 @@ afterEach(() => {
   maps.length = 0;
 });
 describe("pin map", () => {
+  it("loads transit on double click, preserves zoom and reuses mounted frames and overview", async () => {
+    setup();
+    await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(3));
+    const first = screen.getByRole("button", { name: "1 0,0 到 2 0,1" });
+    fireEvent.click(first);
+    expect(document.querySelectorAll("iframe")).toHaveLength(0);
+    fireEvent.doubleClick(first);
+    const frame = document.querySelector("iframe")!;
+    const url = new URL(frame.src);
+    expect(url.pathname).toBe("/maps/embed/v1/directions");
+    expect(url.searchParams.get("mode")).toBe("transit");
+    expect(url.searchParams.get("zoom")).toBe("15");
+    expect(url.searchParams.get("origin")).toBe("0,0");
+    expect(url.searchParams.get("destination")).toBe("0,1");
+    expect(url.searchParams.get("center")).toBe("0,0.5");
+    fireEvent.doubleClick(first);
+    expect(document.querySelector("iframe")).toBe(frame);
+    fireEvent.doubleClick(
+      screen.getByRole("button", { name: "2 0,1 到 3 1,1" }),
+    );
+    expect(frame.hidden).toBe(true);
+    fireEvent.doubleClick(first);
+    expect(frame.hidden).toBe(false);
+    const fitCalls = maps[0].fitBounds.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "返回总览" }));
+    expect(frame.hidden).toBe(true);
+    expect(maps).toHaveLength(1);
+    expect(maps[0].fitBounds).toHaveBeenCalledTimes(fitCalls);
+    fireEvent.keyDown(first, { key: "Enter" });
+    expect(document.querySelector("iframe")).toBe(frame);
+    expect(frame.hidden).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "返回总览" }));
+    maps[0].getZoom.mockReturnValue(12);
+    fireEvent.doubleClick(first);
+    const visible = [...document.querySelectorAll("iframe")].find(
+      (f) => !f.hidden,
+    )!;
+    expect(new URL(visible.src).searchParams.get("zoom")).toBe("12");
+    expect(geocode).not.toHaveBeenCalled();
+  });
+
   it("zooms directly with the mouse wheel", async () => {
     setup();
     await waitFor(() => expect(maps).toHaveLength(1));
@@ -133,9 +175,7 @@ describe("pin map", () => {
     geocode.mockRejectedValueOnce(new Error("ZERO_RESULTS"));
     setup(["0,0", "Missing", "1,1"]);
     const retry = await screen.findByRole("button", { name: "重试地点 2" });
-    await waitFor(() =>
-      expect(markers.filter((m) => m.map)).toHaveLength(2),
-    );
+    await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(2));
     expect(lines.filter((l) => l.map)).toHaveLength(0);
     geocode.mockResolvedValueOnce(position(0, 1));
     fireEvent.click(retry);

@@ -6,7 +6,7 @@
 
 ## 开始使用
 
-1. 在 [Google Cloud Console](https://console.cloud.google.com/) 创建项目并关联计费账户，启用 **Maps JavaScript API**。使用地址输入时，同时启用 **Geocoding API**。
+1. 在 [Google Cloud Console](https://console.cloud.google.com/) 创建项目并关联计费账户，启用 **Maps JavaScript API** 和 **Maps Embed API**。使用地址输入时，同时启用 **Geocoding API**。
 2. 创建浏览器 API Key，应用限制选择「网站」，添加 `https://eshuotan-labs.github.io/*`，并将 API 限制设为所需服务。
 3. 在编辑器填写 Key 和至少两个地点。支持完整地址或 `纬度,经度`，拖动地点左侧手柄调整顺序。
 4. 点击「预览地图」，查看编号图钉和直线连线，然后复制嵌入链接。修改后再次预览即可生成新链接。
@@ -37,6 +37,8 @@ https://eshuotan-labs.github.io/routeflow-map/?view=embed&key=YOUR_GOOGLE_MAPS_K
 ## 地图行为
 
 每个地点独立显示编号图钉；相邻且定位成功的地点使用统一颜色的直线连接。点击连线或路线详情可以高亮该段，详情按起点编号与名称、箭头、终点编号与名称分三行展示。嵌入页提供“重置缩放”按钮以显示完整行程，并可通过“编辑行程”携带当前配置打开编辑器。
+
+双击列表项（键盘可按 Enter）查看该段公共交通实际路线，使用 Maps Embed API 的 `directions` 模式与 `mode=transit`。打开时沿用总览的缩放级别，中心设为该段两端的中点；点击“返回总览”恢复保留的总览视图。路线页面按需加载，当前页面最多保留六个路线/缩放组合的 iframe，重复查看缓存项直接显示原 iframe；超出容量、缩放变化或刷新页面后可能重新加载。Google iframe 内的手动缩放由 Google 管理，返回总览时保留总览原来的缩放。
 
 经纬度直接用于绘图。地址通过地理编码获取位置，每次定位最多并发处理三个地点，同一批中的重复地址共享定位请求。某个地点失败时，成功定位的图钉继续显示；重试成功后补齐与相邻地点的连线。
 

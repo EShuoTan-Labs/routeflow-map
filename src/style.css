@@ -517,6 +517,11 @@ footer {
   height: 100%;
   width: 100%;
 }
+.route-frame {
+  position: absolute;
+  inset: 0;
+  border: 0;
+}
 .map-controls {
   position: absolute;
   left: 12px;

@@ -154,6 +154,7 @@ function App() {
           </div>
           <p className="hint">
             底图使用 Maps JavaScript API；地址定位使用 Geocoding
+            API；公共交通路线使用 Maps Embed
             API。密钥保存在此浏览器并随嵌入链接共享，请设置域名限制。
           </p>
           <div className="stops-heading">

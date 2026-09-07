@@ -8,6 +8,10 @@ export function MapView({ config }: { config: Config }) {
   const runner = useRef(new PointRunner()),
     locate = useRef<Locate | null>(null);
   const [results, setResults] = useState<Record<number, PointResult>>({});
+  const [routeFrames, setRouteFrames] = useState<
+    { url: string; title: string }[]
+  >([]);
+  const [activeRoute, setActiveRoute] = useState<string | null>(null);
   const [error, setError] = useState(""),
     [selected, setSelected] = useState<number | null>(null);
   const update = (i: number, result: PointResult) =>
@@ -17,6 +21,8 @@ export function MapView({ config }: { config: Config }) {
     setResults({});
     setError("");
     setSelected(null);
+    setActiveRoute(null);
+    setRouteFrames([]);
     map.current = null;
     locate.current = null;
     loadGoogle(config.key)
@@ -33,6 +39,7 @@ export function MapView({ config }: { config: Config }) {
         map.current = new Map(host.current, {
           center: { lat: 35.68, lng: 139.76 },
           zoom: 11,
+          isFractionalZoomEnabled: false,
           mapId: "DEMO_MAP_ID",
           mapTypeControl: false,
           streetViewControl: false,
@@ -122,16 +129,82 @@ export function MapView({ config }: { config: Config }) {
   const busy =
     Object.keys(results).length < config.points.length ||
     Object.values(results).some((r) => r.status === "loading");
+  function showRoute(i: number) {
+    if (!map.current || busy || error) return;
+    const start = results[i]?.position,
+      end = results[i + 1]?.position;
+    const query = new URLSearchParams({
+      key: config.key.trim(),
+      origin: start ? `${start.lat},${start.lng}` : config.points[i].trim(),
+      destination: end ? `${end.lat},${end.lng}` : config.points[i + 1].trim(),
+      mode: "transit",
+      zoom: String(
+        Math.max(0, Math.min(21, Math.round(map.current.getZoom() ?? 11))),
+      ),
+      language: "zh-CN",
+    });
+    if (start && end) {
+      // Use the short arc midpoint for segments crossing the date line.
+      const delta = ((end.lng - start.lng + 540) % 360) - 180;
+      query.set(
+        "center",
+        `${(start.lat + end.lat) / 2},${((start.lng + delta / 2 + 540) % 360) - 180}`,
+      );
+    }
+    const url = `https://www.google.com/maps/embed/v1/directions?${query}`;
+    setSelected(i);
+    setActiveRoute(url);
+    // Keep mounted frames in insertion order: reordering iframes can reload them.
+    // A bounded session cache avoids retaining a frame for every stop/zoom.
+    setRouteFrames((frames) =>
+      frames.some((f) => f.url === url)
+        ? frames
+        : [
+            ...frames.slice(-5),
+            {
+              url,
+              title: `公共交通路线：${config.points[i]} → ${config.points[i + 1]}`,
+            },
+          ],
+    );
+  }
   return (
     <main className="embed-map">
-      <div className="google-map" ref={host} aria-label="行程地图" />
+      <div
+        className="google-map"
+        ref={host}
+        aria-label="行程地图"
+        style={{ visibility: activeRoute ? "hidden" : "visible" }}
+      />
+      {routeFrames.map((frame) => (
+        <iframe
+          key={frame.url}
+          className="google-map route-frame"
+          src={frame.url}
+          title={frame.title}
+          hidden={activeRoute !== frame.url}
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+        />
+      ))}
       <div className="map-controls">
-        <button
-          onClick={resetZoom}
-          disabled={!Object.values(results).some((r) => r.position)}
-        >
-          重置缩放
-        </button>
+        {activeRoute ? (
+          <button
+            onClick={() => {
+              setActiveRoute(null);
+              setSelected(null);
+            }}
+          >
+            返回总览
+          </button>
+        ) : (
+          <button
+            onClick={resetZoom}
+            disabled={!Object.values(results).some((r) => r.position)}
+          >
+            重置缩放
+          </button>
+        )}
         <a
           href={makeUrl(config, window.location.href, "editor")}
           target="_blank"
@@ -162,7 +235,9 @@ export function MapView({ config }: { config: Config }) {
       >
         <summary>
           行程连线 · {config.points.length} 个图钉
-          <span>{error ? "加载失败" : busy ? "定位中…" : "展开查看"}</span>
+          <span>
+            {error ? "加载失败" : busy ? "定位中…" : "双击查看公共交通路线"}
+          </span>
         </summary>
         {config.points.map(
           (point, i) =>
@@ -190,11 +265,19 @@ export function MapView({ config }: { config: Config }) {
           <article
             className={`result ${selected === i ? "selected" : ""}`}
             key={i}
+            onDoubleClick={() => showRoute(i)}
           >
             <button
               className="result-title"
               aria-label={`${i + 1} ${config.points[i]} 到 ${i + 2} ${p}`}
               onClick={() => setSelected(i)}
+              title="双击查看公共交通路线，或按 Enter"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  showRoute(i);
+                }
+              }}
             >
               <span>
                 {i + 1} {config.points[i]}
