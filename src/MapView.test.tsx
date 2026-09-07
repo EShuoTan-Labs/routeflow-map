@@ -133,7 +133,9 @@ describe("pin map", () => {
     geocode.mockRejectedValueOnce(new Error("ZERO_RESULTS"));
     setup(["0,0", "Missing", "1,1"]);
     const retry = await screen.findByRole("button", { name: "重试地点 2" });
-    expect(markers.filter((m) => m.map)).toHaveLength(2);
+    await waitFor(() =>
+      expect(markers.filter((m) => m.map)).toHaveLength(2),
+    );
     expect(lines.filter((l) => l.map)).toHaveLength(0);
     geocode.mockResolvedValueOnce(position(0, 1));
     fireEvent.click(retry);
