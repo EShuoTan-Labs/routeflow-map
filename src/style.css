@@ -5,12 +5,21 @@
   background: #f7f8f4;
   font-synthesis: none;
   font-size: 14px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 * {
   box-sizing: border-box;
 }
 body {
   margin: 0;
+  min-height: 100vh;
+  background: inherit;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
 }
 button,
 input,
@@ -78,6 +87,22 @@ header {
   justify-content: space-between;
   border-bottom: 1px solid #e2e7dd;
 }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+.theme-toggle span {
+  font-size: 15px;
+  line-height: 1;
+}
 .logo {
   font-size: 23px;
   font-weight: 700;
@@ -111,6 +136,9 @@ header {
   align-items: center;
   justify-content: space-between;
   padding: 39px 0 33px;
+}
+.intro .eyebrow {
+  margin-bottom: 10px;
 }
 .eyebrow {
   font-size: 10px;
@@ -700,4 +728,170 @@ footer {
 .key-input button {
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+:root[data-theme="dark"] {
+  color: #dbe7e1;
+  background: #111815;
+}
+:root[data-theme="dark"] button,
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  color: #d8e4de;
+  background: #1b2621;
+  border-color: #35443d;
+}
+:root[data-theme="dark"] button:hover:enabled {
+  background: #26372f;
+}
+:root[data-theme="dark"] a {
+  color: #8bc9aa;
+}
+:root[data-theme="dark"] input:focus,
+:root[data-theme="dark"] select:focus,
+:root[data-theme="dark"] textarea:focus {
+  border-color: #67ad8a;
+  box-shadow: 0 0 0 3px #67ad8a24;
+}
+:root[data-theme="dark"] header,
+:root[data-theme="dark"] footer {
+  border-color: #2b3932;
+}
+:root[data-theme="dark"] .logo {
+  color: #d7e9df;
+}
+:root[data-theme="dark"] .logo > span,
+:root[data-theme="dark"] .primary,
+:root[data-theme="dark"] .map-pin {
+  color: #f6fff9;
+  background: #347254;
+  border-color: #347254;
+}
+:root[data-theme="dark"] .logo small {
+  color: #92a39a;
+  border-color: #45564e;
+}
+:root[data-theme="dark"] .github,
+:root[data-theme="dark"] .intro p,
+:root[data-theme="dark"] .share p,
+:root[data-theme="dark"] .hint,
+:root[data-theme="dark"] .legend,
+:root[data-theme="dark"] footer,
+:root[data-theme="dark"] .muted,
+:root[data-theme="dark"] .result-place,
+:root[data-theme="dark"] .route-summary summary span {
+  color: #94a79d;
+}
+:root[data-theme="dark"] .eyebrow,
+:root[data-theme="dark"] .section-heading > span,
+:root[data-theme="dark"] .preview-heading > span,
+:root[data-theme="dark"] .key-input button,
+:root[data-theme="dark"] .empty-card small {
+  color: #82978c;
+}
+:root[data-theme="dark"] .embed-badge,
+:root[data-theme="dark"] .stop-number {
+  color: #a6d2b9;
+  background: #22332a;
+  border-color: #3b5045;
+}
+:root[data-theme="dark"] .editor,
+:root[data-theme="dark"] .empty-card,
+:root[data-theme="dark"] .map-brand,
+:root[data-theme="dark"] .route-summary,
+:root[data-theme="dark"] .map-error {
+  background: #18221d;
+  border-color: #303f38;
+  box-shadow: 0 8px 28px #0005;
+}
+:root[data-theme="dark"] .key-input {
+  border-color: #35443d;
+}
+:root[data-theme="dark"] .text-button,
+:root[data-theme="dark"] .compass {
+  color: #91c3a5;
+}
+:root[data-theme="dark"] .segment-line {
+  border-color: #475b50;
+}
+:root[data-theme="dark"] .segment select {
+  background: #202d27;
+}
+:root[data-theme="dark"] .add-stop {
+  color: #9bc7ad;
+  background: #17221d;
+  border-color: #4a6255;
+}
+:root[data-theme="dark"] .primary:hover:enabled {
+  background: #428463;
+}
+:root[data-theme="dark"] .preview-canvas,
+:root[data-theme="dark"] .embed-map {
+  background: #17231f;
+  border-color: #33443b;
+}
+:root[data-theme="dark"] .river {
+  stroke: #243b39;
+}
+:root[data-theme="dark"] .streets {
+  stroke: #2d3a34;
+}
+:root[data-theme="dark"] .sample-route {
+  stroke: #7eaa80;
+}
+:root[data-theme="dark"] .map-art circle {
+  fill: #1d2a24;
+  stroke: #7ba27e;
+}
+:root[data-theme="dark"] .map-art text {
+  fill: #b6ceb8;
+}
+:root[data-theme="dark"] .empty-card p {
+  color: #9aada3;
+}
+:root[data-theme="dark"] .compass {
+  border-color: #405449;
+}
+:root[data-theme="dark"] .share {
+  background: #18261f;
+  border-color: #33463b;
+}
+:root[data-theme="dark"] .share-actions button {
+  background: #202e27;
+}
+:root[data-theme="dark"] .errors {
+  color: #ffc09b;
+  background: #3a261d;
+}
+:root[data-theme="dark"] .result {
+  border-color: #34443c;
+}
+:root[data-theme="dark"] .result.selected {
+  background: #223229;
+}
+:root[data-theme="dark"] .warning {
+  color: #e2aa73;
+}
+:root[data-theme="dark"] .map-warnings {
+  color: #f0c490;
+  background: #382b1d;
+}
+
+@media (max-width: 520px) {
+  .header-actions {
+    gap: 8px;
+  }
+  .theme-toggle {
+    padding: 7px 9px;
+  }
+  .theme-toggle span {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .github {
+    display: none;
+  }
 }

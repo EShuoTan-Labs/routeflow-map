@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   parse,
   validate,
@@ -15,6 +15,8 @@ import {
 import { MapView, colors } from "./MapView";
 import "./style.css";
 const initial = parse(window.location.search);
+type Theme = "light" | "dark";
+
 function App() {
   const [config, setConfig] = useState<Config>(initial.config),
     [errors, setErrors] = useState(initial.errors);
@@ -23,6 +25,13 @@ function App() {
     [copied, setCopied] = useState("");
   const [previewRevision, setPreviewRevision] = useState(0);
   const [showKey, setShowKey] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() =>
+    document.documentElement.dataset.theme === "dark" ? "dark" : "light",
+  );
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("routeflow-theme", theme);
+  }, [theme]);
   const set = (patch: Partial<Config>) => {
     setConfig((c) => ({ ...c, ...patch }));
     setShare("");
@@ -98,21 +107,30 @@ function App() {
         <a className="logo" href={window.location.pathname}>
           <span>↗</span> RouteFlow <small>MAP</small>
         </a>
-        <a
-          className="github"
-          href="https://github.com/EShuoTan-Labs/routeflow-map"
-          target="_blank"
-          rel="noreferrer"
-        >
-          使用指南 ↗
-        </a>
+        <div className="header-actions">
+          <button
+            className="theme-toggle"
+            type="button"
+            aria-label={`切换到${theme === "dark" ? "浅色" : "深色"}模式`}
+            title={`切换到${theme === "dark" ? "浅色" : "深色"}模式`}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <span aria-hidden="true">{theme === "dark" ? "☀" : "◐"}</span>
+            {theme === "dark" ? "浅色" : "深色"}
+          </button>
+          <a
+            className="github"
+            href="https://github.com/EShuoTan-Labs/routeflow-map"
+            target="_blank"
+            rel="noreferrer"
+          >
+            使用指南 ↗
+          </a>
+        </div>
       </header>
       <section className="intro">
         <div>
           <div className="eyebrow">A LITTLE MAP. A BIG JOURNEY.</div>
-          <h1>
-            把旅途，<span>连成地图。</span>
-          </h1>
           <p>步行穿过街巷，乘列车去下一站。为你的旅行文档，绘制每一段路。</p>
         </div>
         <span className="embed-badge">◇ 为 Notion 等文档而生</span>
