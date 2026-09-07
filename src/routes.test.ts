@@ -80,14 +80,17 @@ describe("route requests", () => {
     );
   });
   it("reports actionable route service errors", () => {
-    expect(routeErrorMessage(new Error("PERMISSION_DENIED"))).toContain(
-      "Routes API",
-    );
-    expect(routeErrorMessage(new Error("RESOURCE_EXHAUSTED"))).toContain(
-      "配额",
-    );
-    expect(routeErrorMessage(new Error("backend unavailable"))).toContain(
-      "backend unavailable",
+    expect(
+      routeErrorMessage(new Error("PERMISSION_DENIED"), "transit"),
+    ).toContain("Routes API");
+    expect(
+      routeErrorMessage(new Error("RESOURCE_EXHAUSTED"), "transit"),
+    ).toContain("配额");
+    expect(
+      routeErrorMessage(new Error("backend unavailable"), "walking"),
+    ).toContain("backend unavailable");
+    expect(routeErrorMessage(new Error("no route"), "步行")).toContain(
+      "步行路线",
     );
   });
   it("discards responses from a previous generation", async () => {
