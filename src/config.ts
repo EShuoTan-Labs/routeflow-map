@@ -42,7 +42,8 @@ export function location(value: string): string | { lat: number; lng: number } {
       throw new Error("经纬度须在 ±90、±180 范围内");
     return { lat, lng };
   }
-  return text;
+  // Localized addresses are more reliably geocoded with ASCII separators.
+  return text.replace(/[，、]/g, ",");
 }
 export function validate(c: Config, requireKey = true): string[] {
   const errors: string[] = [];

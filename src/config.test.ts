@@ -32,6 +32,8 @@ describe("URL configuration", () => {
   it("validates coordinates and preserves addresses", () => {
     expect(location("-90, 180")).toEqual({ lat: -90, lng: 180 });
     expect(location("Tokyo, Japan")).toBe("Tokyo, Japan");
+    expect(location("浅草寺，东京")).toBe("浅草寺,东京");
+    expect(location("东京站、东京")).toBe("东京站,东京");
     expect(() => location("91,0")).toThrow();
     expect(() => location("1,181")).toThrow();
     expect(() => location(" ")).toThrow();

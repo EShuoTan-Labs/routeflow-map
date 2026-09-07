@@ -196,7 +196,11 @@ function App() {
               className="text-button"
               onClick={() =>
                 set({
-                  points: ["东京站", "浅草寺，东京", "东京晴空塔"],
+                  points: [
+                    "东京站, 东京都千代田区丸之内1丁目, 日本",
+                    "浅草寺, 东京都台东区浅草2丁目3-1, 日本",
+                    "东京晴空塔, 东京都墨田区押上1丁目1-2, 日本",
+                  ],
                   segments: { "1": { mode: "walking" } },
                 })
               }
