@@ -13,11 +13,17 @@ vi.mock("./google", () => ({ loadGoogle: vi.fn(async () => {}) }));
 const geocode = vi.fn(),
   imports = vi.fn();
 const lines: any[] = [],
-  markers: any[] = [];
+  markers: any[] = [],
+  maps: FakeMap[] = [];
 class FakeMap {
   fitBounds = vi.fn();
   setCenter = vi.fn();
   setZoom = vi.fn();
+  options: any;
+  constructor(_host: HTMLElement, options: any) {
+    this.options = options;
+    maps.push(this);
+  }
 }
 class Bounds {
   extend() {}
@@ -73,8 +79,15 @@ afterEach(() => {
   geocode.mockReset();
   lines.length = 0;
   markers.length = 0;
+  maps.length = 0;
 });
 describe("pin map", () => {
+  it("zooms directly with the mouse wheel", async () => {
+    setup();
+    await waitFor(() => expect(maps).toHaveLength(1));
+    expect(maps[0].options.gestureHandling).toBe("greedy");
+  });
+
   it("draws numbered pins and two-endpoint straight lines without service requests", async () => {
     const view = setup();
     await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(3));

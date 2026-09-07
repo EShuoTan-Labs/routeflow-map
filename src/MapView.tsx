@@ -37,7 +37,7 @@ export function MapView({ config }: { config: Config }) {
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: true,
-          gestureHandling: "cooperative",
+          gestureHandling: "greedy",
         });
         let geocoder: Promise<any> | undefined;
         locate.current = async (address) => {
