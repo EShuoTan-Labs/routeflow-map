@@ -1,12 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type Config, makeUrl } from "./config";
 import { loadGoogle } from "./google";
-import {
-  PointRunner,
-  distanceKm,
-  type PointResult,
-  type Locate,
-} from "./routes";
+import { PointRunner, type PointResult, type Locate } from "./routes";
 export function MapView({ config }: { config: Config }) {
   const host = useRef<HTMLDivElement>(null),
     map = useRef<any>(null);
@@ -106,7 +101,7 @@ export function MapView({ config }: { config: Config }) {
       });
     };
   }, [results, selected, config]);
-  useEffect(() => {
+  const resetZoom = useCallback(() => {
     if (!map.current) return;
     const positions = Object.values(results).flatMap((r) =>
       r.position ? [r.position] : [],
@@ -123,15 +118,27 @@ export function MapView({ config }: { config: Config }) {
       map.current.setZoom(14);
     } else map.current.fitBounds(bounds, 60);
   }, [results]);
+  useEffect(resetZoom, [resetZoom]);
   const busy =
     Object.keys(results).length < config.points.length ||
     Object.values(results).some((r) => r.status === "loading");
   return (
     <main className="embed-map">
       <div className="google-map" ref={host} aria-label="行程地图" />
-      <div className="map-brand">
-        ↗ <b>RouteFlow</b>
-        <span>图钉之间，串起旅程</span>
+      <div className="map-controls">
+        <button
+          onClick={resetZoom}
+          disabled={!Object.values(results).some((r) => r.position)}
+        >
+          重置缩放
+        </button>
+        <a
+          href={makeUrl(config, window.location.href, "editor")}
+          target="_blank"
+          rel="noreferrer"
+        >
+          编辑行程 ↗
+        </a>
       </div>
       {error && (
         <div className="map-error" role="alert">
@@ -157,7 +164,6 @@ export function MapView({ config }: { config: Config }) {
           行程连线 · {config.points.length} 个图钉
           <span>{error ? "加载失败" : busy ? "定位中…" : "展开查看"}</span>
         </summary>
-        <p className="muted">图钉按地点顺序直线相连，距离为两点间直线距离。</p>
         {config.points.map(
           (point, i) =>
             results[i]?.status === "error" && (
@@ -180,32 +186,28 @@ export function MapView({ config }: { config: Config }) {
               </article>
             ),
         )}
-        {config.points.slice(1).map((p, i) => {
-          const a = results[i],
-            b = results[i + 1];
-          return (
-            <article
-              className={`result ${selected === i ? "selected" : ""}`}
-              key={i}
+        {config.points.slice(1).map((p, i) => (
+          <article
+            className={`result ${selected === i ? "selected" : ""}`}
+            key={i}
+          >
+            <button
+              className="result-title"
+              aria-label={`${i + 1} ${config.points[i]} 到 ${i + 2} ${p}`}
+              onClick={() => setSelected(i)}
             >
-              <button className="result-title" onClick={() => setSelected(i)}>
-                {i + 1} → {i + 2}
-              </button>
-              <div className="result-place">
-                {config.points[i]} → {p}
-              </div>
-              <p>
-                {a?.position && b?.position
-                  ? `直线距离 ${distanceKm(a.position, b.position).toFixed(1)} 公里`
-                  : a?.status === "error" || b?.status === "error"
-                    ? "等待端点定位成功后连接"
-                    : error
-                      ? "等待地图加载"
-                      : "正在定位地点…"}
-              </p>
-            </article>
-          );
-        })}
+              <span>
+                {i + 1} {config.points[i]}
+              </span>
+              <span className="route-arrow" aria-hidden="true">
+                →
+              </span>
+              <span>
+                {i + 2} {p}
+              </span>
+            </button>
+          </article>
+        ))}
       </details>
     </main>
   );

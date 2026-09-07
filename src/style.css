@@ -517,20 +517,23 @@ footer {
   height: 100%;
   width: 100%;
 }
-.map-brand {
+.map-controls {
   position: absolute;
   left: 12px;
   top: 12px;
+  display: flex;
+  gap: 8px;
+}
+.map-controls button,
+.map-controls a {
   background: white;
+  border: 1px solid #dce3dc;
   padding: 10px 13px;
   border-radius: 8px;
   box-shadow: 0 2px 10px #0001;
   color: #315c43;
-}
-.map-brand span {
-  font-size: 10px;
-  margin-left: 12px;
-  color: #82927e;
+  font-size: 12px;
+  text-decoration: none;
 }
 .route-summary {
   position: absolute;
@@ -709,9 +712,6 @@ footer {
   }
 }
 @media (max-width: 400px) {
-  .map-brand span {
-    display: none;
-  }
   .route-summary {
     max-height: 55%;
   }
@@ -799,7 +799,7 @@ footer {
 }
 :root[data-theme="dark"] .editor,
 :root[data-theme="dark"] .empty-card,
-:root[data-theme="dark"] .map-brand,
+:root[data-theme="dark"] .map-controls a,
 :root[data-theme="dark"] .route-summary,
 :root[data-theme="dark"] .map-error {
   background: #18221d;
@@ -903,4 +903,42 @@ footer {
 }
 .map-caption {
   margin: 12px 2px 18px;
+}
+
+.stops {
+  display: grid;
+  gap: 8px;
+}
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  padding: 10px 3px;
+  color: #82927e;
+  flex-shrink: 0;
+}
+.drag-handle:focus-visible {
+  outline: 3px solid #90bfa8;
+  border-radius: 4px;
+}
+.stop.dragging {
+  opacity: 0.5;
+}
+.stop.dragging .drag-handle {
+  cursor: grabbing;
+}
+.stop.drop-target {
+  outline: 2px solid #90bfa8;
+  border-radius: 7px;
+}
+.result-title {
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  overflow-wrap: anywhere;
+}
+.route-arrow {
+  color: #82927e;
 }

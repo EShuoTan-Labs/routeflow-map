@@ -24,6 +24,8 @@ function App() {
     [copied, setCopied] = useState("");
   const [previewRevision, setPreviewRevision] = useState(0);
   const [showKey, setShowKey] = useState(false);
+  const [dragged, setDragged] = useState<number | null>(null);
+  const [dropTarget, setDropTarget] = useState<number | null>(null);
   const [theme, setTheme] = useState<Theme>(() =>
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   );
@@ -48,9 +50,10 @@ function App() {
     setShare(url);
     setPreviewRevision((r) => r + 1);
   }
-  function reorder(i: number, delta: number) {
+  function reorder(i: number, target: number) {
+    if (target < 0 || target >= config.points.length || target === i) return;
     const points = [...config.points];
-    [points[i], points[i + delta]] = [points[i + delta], points[i]];
+    points.splice(target, 0, points.splice(i, 1)[0]);
     set({ points });
   }
   function remove(i: number) {
@@ -172,8 +175,57 @@ function App() {
           </div>
           <div className="stops">
             {config.points.map((point, i) => (
-              <div key={i} className="stop">
+              <div
+                key={i}
+                data-stop-index={i}
+                className={`stop ${dragged === i ? "dragging" : ""} ${dropTarget === i ? "drop-target" : ""}`}
+              >
                 <div className="stop-row">
+                  <span
+                    className="drag-handle"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`拖动排序地点 ${i + 1}`}
+                    title="拖动排序，或使用方向键调整"
+                    onPointerDown={(e) => {
+                      if (e.button !== 0) return;
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      setDragged(i);
+                      setDropTarget(i);
+                    }}
+                    onPointerMove={(e) => {
+                      if (dragged === null) return;
+                      const row = document
+                        .elementFromPoint(e.clientX, e.clientY)
+                        ?.closest<HTMLElement>("[data-stop-index]");
+                      setDropTarget(row ? Number(row.dataset.stopIndex) : null);
+                    }}
+                    onPointerUp={() => {
+                      if (dragged !== null && dropTarget !== null)
+                        reorder(dragged, dropTarget);
+                      setDragged(null);
+                      setDropTarget(null);
+                    }}
+                    onLostPointerCapture={() => {
+                      setDragged(null);
+                      setDropTarget(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                        e.preventDefault();
+                        const target = i + (e.key === "ArrowUp" ? -1 : 1);
+                        reorder(i, target);
+                        if (target >= 0 && target < config.points.length)
+                          document
+                            .querySelector<HTMLElement>(
+                              `[data-stop-index="${target}"] .drag-handle`,
+                            )
+                            ?.focus();
+                      }
+                    }}
+                  >
+                    ⋮⋮
+                  </span>
                   <span className="stop-number">
                     {String(i + 1).padStart(2, "0")}
                   </span>
@@ -193,20 +245,6 @@ function App() {
                   />
                   <div className="stop-actions">
                     <button
-                      disabled={i === 0}
-                      aria-label={`上移地点 ${i + 1}`}
-                      onClick={() => reorder(i, -1)}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      disabled={i === config.points.length - 1}
-                      aria-label={`下移地点 ${i + 1}`}
-                      onClick={() => reorder(i, 1)}
-                    >
-                      ↓
-                    </button>
-                    <button
                       disabled={config.points.length <= 2}
                       aria-label={`删除地点 ${i + 1}`}
                       onClick={() => remove(i)}
@@ -225,7 +263,7 @@ function App() {
             ＋ 添加途经点
           </button>
           <p className="hint">
-            图钉按列表顺序直线相连，拖动地图可查看各个地点。
+            拖动地点左侧手柄调整顺序，图钉按列表顺序直线相连。
           </p>
           {errors.length > 0 && (
             <ul className="errors" role="alert">

@@ -93,7 +93,21 @@ describe("pin map", () => {
         { lat: 1, lng: 1 },
       ],
     ]);
-    fireEvent.click(screen.getByRole("button", { name: "1 → 2" }));
+    const map = markers.find((m) => m.map).map;
+    map.fitBounds.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "重置缩放" }));
+    expect(map.fitBounds).toHaveBeenCalledTimes(1);
+    const editorUrl = new URL(
+      screen.getByRole("link", { name: "编辑行程 ↗" }).getAttribute("href")!,
+    );
+    expect(editorUrl.searchParams.get("view")).toBe("editor");
+    expect(editorUrl.searchParams.getAll("point")).toEqual([
+      "0,0",
+      "0,1",
+      "1,1",
+    ]);
+    expect(screen.queryByText(/直线距离/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "1 0,0 到 2 0,1" }));
     expect(document.querySelector("details")?.open).toBe(true);
     expect(
       lines.filter((l) => l.map).some((l) => l.options.strokeWeight === 8),
