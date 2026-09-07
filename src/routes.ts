@@ -28,6 +28,7 @@ export function requestFor(c: Config, index: number) {
     destination: location(c.points[index + 1]),
     travelMode: s.mode.toUpperCase(),
     fields: ["path", "legs", "distanceMeters", "durationMillis", "warnings"],
+    ...(s.mode === "transit" ? { departureTime: new Date() } : {}),
     ...(s.mode === "transit" && s.transitModes?.length
       ? {
           transitPreference: {
@@ -40,6 +41,16 @@ export function requestFor(c: Config, index: number) {
 export type Compute = (
   request: ReturnType<typeof requestFor>,
 ) => Promise<{ routes?: RouteData[] }>;
+export function routeErrorMessage(error: unknown): string {
+  const detail = error instanceof Error ? error.message.trim() : "";
+  if (/PERMISSION_DENIED|REQUEST_DENIED|API key|not authorized/i.test(detail))
+    return "路线服务拒绝了请求。请确认 Key 已启用 Maps JavaScript API 和 Routes API，并允许当前网站域名。";
+  if (/RESOURCE_EXHAUSTED|OVER_QUERY_LIMIT|quota/i.test(detail))
+    return "路线查询配额已用尽。请检查 Google Cloud 配额和结算状态。";
+  if (/ZERO_RESULTS|NOT_FOUND|no route|未找到路线/i.test(detail))
+    return "此段暂无可用公共交通路线，请调整地点或出发时间。";
+  return detail ? `路线查询失败：${detail}` : "路线查询失败，请稍后重试。";
+}
 // The generation token prevents results from older configurations reaching the UI.
 export class RouteRunner {
   private generation = 0;
@@ -65,12 +76,11 @@ export class RouteRunner {
               throw new Error("未找到路线，请调整地点或交通方式");
             if (token === this.generation)
               update(i, { status: "success", route: routes[0] });
-          } catch {
+          } catch (error) {
             if (token === this.generation)
               update(i, {
                 status: "error",
-                error:
-                  "此段暂无可用路线。请检查地点、交通覆盖，以及 Key 的 API 权限和配额。",
+                error: routeErrorMessage(error),
               });
           }
         }

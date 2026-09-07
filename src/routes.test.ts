@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { defaults, type Config } from "./config";
-import { RouteRunner, requestFor, type Result } from "./routes";
+import {
+  RouteRunner,
+  requestFor,
+  routeErrorMessage,
+  type Result,
+} from "./routes";
 const c: Config = {
   ...defaults,
   key: "test",
@@ -20,7 +25,7 @@ const success = {
   ],
 };
 describe("route requests", () => {
-  it("splits mixed traffic and consecutive transit into endpoint requests without intermediate waypoints or explicit time", () => {
+  it("splits mixed traffic and consecutive transit into endpoint requests with current transit departure times", () => {
     const requests = [0, 1, 2, 3].map((i) => requestFor(c, i));
     expect(requests.map((r) => r.travelMode)).toEqual([
       "TRANSIT",
@@ -35,8 +40,9 @@ describe("route requests", () => {
     expect(requests[2].destination).toBe("D");
     requests.forEach((r) => {
       expect(r).not.toHaveProperty("intermediates");
-      expect(r).not.toHaveProperty("departureTime");
     });
+    expect(requests[0].departureTime).toBeInstanceOf(Date);
+    expect(requests[1]).not.toHaveProperty("departureTime");
   });
   it("limits concurrency to three and preserves successful routes across failure and retry", async () => {
     let active = 0,
@@ -71,6 +77,17 @@ describe("route requests", () => {
     expect(update).toHaveBeenLastCalledWith(
       0,
       expect.objectContaining({ status: "error" }),
+    );
+  });
+  it("reports actionable route service errors", () => {
+    expect(routeErrorMessage(new Error("PERMISSION_DENIED"))).toContain(
+      "Routes API",
+    );
+    expect(routeErrorMessage(new Error("RESOURCE_EXHAUSTED"))).toContain(
+      "配额",
+    );
+    expect(routeErrorMessage(new Error("backend unavailable"))).toContain(
+      "backend unavailable",
     );
   });
   it("discards responses from a previous generation", async () => {
