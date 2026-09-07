@@ -13,8 +13,18 @@ import {
   type TransitMode,
 } from "./config";
 import { MapView, colors } from "./MapView";
+import { loadApiKey, saveApiKey } from "./storage";
 import "./style.css";
-const initial = parse(window.location.search);
+const parsed = parse(window.location.search);
+const initial = {
+  ...parsed,
+  config: {
+    ...parsed.config,
+    key:
+      parsed.config.key ||
+      (parsed.config.view === "editor" ? loadApiKey() : ""),
+  },
+};
 type Theme = "light" | "dark";
 
 function App() {
@@ -32,6 +42,9 @@ function App() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("routeflow-theme", theme);
   }, [theme]);
+  useEffect(() => {
+    if (config.view === "editor") saveApiKey(config.key);
+  }, [config.key, config.view]);
   const set = (patch: Partial<Config>) => {
     setConfig((c) => ({ ...c, ...patch }));
     setShare("");
@@ -160,7 +173,9 @@ function App() {
               {showKey ? "隐藏" : "显示"}
             </button>
           </div>
-          <p className="hint">密钥随嵌入链接共享，请设置网站域名限制。</p>
+          <p className="hint">
+            密钥会保存在此浏览器，并随嵌入链接共享；请设置网站域名限制。
+          </p>
           <label className="field-label" htmlFor="default-mode">
             默认交通方式
           </label>
