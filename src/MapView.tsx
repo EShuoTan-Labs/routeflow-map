@@ -221,6 +221,8 @@ export function MapView({ config }: { config: Config }) {
           isFractionalZoomEnabled: true,
           mapId: "DEMO_MAP_ID",
           mapTypeControl: false,
+          cameraControl: false,
+          zoomControl: false,
           streetViewControl: false,
           fullscreenControl: false,
           gestureHandling: "cooperative",
