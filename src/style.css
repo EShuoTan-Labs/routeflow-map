@@ -517,22 +517,6 @@ footer {
   height: 100%;
   width: 100%;
 }
-.map-gesture-hint {
-  position: absolute;
-  z-index: 2;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  padding: 10px 14px;
-  border-radius: 5px;
-  background: rgb(32 33 36 / 88%);
-  box-shadow: 0 2px 8px #0004;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-}
 .route-frame {
   position: absolute;
   inset: 0;

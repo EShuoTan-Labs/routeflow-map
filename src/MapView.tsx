@@ -39,6 +39,56 @@ function MapIcon({
     </svg>
   );
 }
+
+export function installTwoFingerTouchGuard(mapHost: HTMLElement) {
+  const activeTouchPointers = new Set<number>();
+  const startsOnMap = (event: Event) =>
+    event.target instanceof Node && mapHost.contains(event.target);
+  const trackTouchPointer = (event: PointerEvent) => {
+    if (event.pointerType === "touch" && startsOnMap(event))
+      activeTouchPointers.add(event.pointerId);
+  };
+  const releaseTouchPointer = (event: PointerEvent) => {
+    activeTouchPointers.delete(event.pointerId);
+  };
+  const guardPointerMove = (event: PointerEvent) => {
+    if (
+      event.pointerType === "touch" &&
+      activeTouchPointers.has(event.pointerId) &&
+      activeTouchPointers.size < 2
+    )
+      event.stopImmediatePropagation();
+  };
+  const guardTouchMove = (event: TouchEvent) => {
+    if (startsOnMap(event) && event.touches.length < 2)
+      event.stopImmediatePropagation();
+  };
+  window.addEventListener("pointerdown", trackTouchPointer, true);
+  window.addEventListener("pointermove", guardPointerMove, true);
+  window.addEventListener("pointerup", releaseTouchPointer, true);
+  window.addEventListener("pointercancel", releaseTouchPointer, true);
+  window.addEventListener("touchmove", guardTouchMove, {
+    capture: true,
+    passive: true,
+  });
+  return () => {
+    window.removeEventListener("pointerdown", trackTouchPointer, true);
+    window.removeEventListener("pointermove", guardPointerMove, true);
+    window.removeEventListener("pointerup", releaseTouchPointer, true);
+    window.removeEventListener("pointercancel", releaseTouchPointer, true);
+    window.removeEventListener("touchmove", guardTouchMove, true);
+  };
+}
+
+function isCrossOriginEmbed() {
+  if (window.parent === window) return false;
+  try {
+    return window.parent.location.origin !== window.location.origin;
+  } catch {
+    return true;
+  }
+}
+
 export function MapView({ config }: { config: Config }) {
   const host = useRef<HTMLDivElement>(null),
     map = useRef<any>(null);
@@ -59,69 +109,20 @@ export function MapView({ config }: { config: Config }) {
     { url: string; title: string }[]
   >([]);
   const [activeRoute, setActiveRoute] = useState<string | null>(null);
-  const [gestureHint, setGestureHint] = useState(false);
   const [error, setError] = useState(""),
     [selected, setSelected] = useState<number | null>(null);
   const update = (i: number, result: PointResult) =>
     setResults((prev) => ({ ...prev, [i]: result }));
   useEffect(() => {
     let disposed = false;
-    let gestureHintTimer: ReturnType<typeof setTimeout> | undefined;
     const mapHost = host.current;
-    const activeTouchPointers = new Set<number>();
-    const providesGestureHint = (() => {
-      if (window.parent === window) return true;
-      try {
-        return window.parent.location.origin === window.location.origin;
-      } catch {
-        // Cross-origin hosts such as Notion provide their own gesture prompt.
-        return false;
-      }
-    })();
-    const showGestureHint = () => {
-      if (!providesGestureHint) return;
-      setGestureHint(true);
-      clearTimeout(gestureHintTimer);
-      gestureHintTimer = setTimeout(() => setGestureHint(false), 1600);
-    };
-    const startsOnMap = (event: Event) =>
-      !!mapHost &&
-      event.target instanceof Node &&
-      mapHost.contains(event.target);
-    const trackTouchPointer = (event: PointerEvent) => {
-      if (event.pointerType === "touch" && startsOnMap(event))
-        activeTouchPointers.add(event.pointerId);
-    };
-    const releaseTouchPointer = (event: PointerEvent) => {
-      activeTouchPointers.delete(event.pointerId);
-    };
-    const guardPointerMove = (event: PointerEvent) => {
-      if (
-        event.pointerType === "touch" &&
-        activeTouchPointers.has(event.pointerId) &&
-        activeTouchPointers.size < 2
-      ) {
-        showGestureHint();
-        event.stopImmediatePropagation();
-      }
-    };
-    const guardTouchMove = (event: TouchEvent) => {
-      if (startsOnMap(event) && event.touches.length < 2) {
-        showGestureHint();
-        event.stopImmediatePropagation();
-      }
-    };
     // Some mobile WebViews do not consistently honor Google Maps'
-    // cooperative mode inside nested iframes. Capture movement before the map
-    // sees it so one finger remains available for scrolling the host document.
-    window.addEventListener("pointerdown", trackTouchPointer, true);
-    window.addEventListener("pointermove", guardPointerMove, true);
-    window.addEventListener("pointerup", releaseTouchPointer, true);
-    window.addEventListener("pointercancel", releaseTouchPointer, true);
-    window.addEventListener("touchmove", guardTouchMove, {
-      capture: true,
-      passive: true,
-    });
+    // cooperative mode in cross-origin embeds. Same-origin editor previews are
+    // left to Google so its native two-finger prompt remains available.
+    const removeTouchGuard =
+      mapHost && isCrossOriginEmbed()
+        ? installTwoFingerTouchGuard(mapHost)
+        : () => {};
     setResults({});
     setMarkerReady(false);
     setMapConfig(null);
@@ -129,7 +130,6 @@ export function MapView({ config }: { config: Config }) {
     setError("");
     setSelected(null);
     setActiveRoute(null);
-    setGestureHint(false);
     setRouteFrames([]);
     map.current = null;
     locate.current = null;
@@ -184,13 +184,8 @@ export function MapView({ config }: { config: Config }) {
       });
     return () => {
       disposed = true;
-      clearTimeout(gestureHintTimer);
       runner.current.cancel();
-      window.removeEventListener("pointerdown", trackTouchPointer, true);
-      window.removeEventListener("pointermove", guardPointerMove, true);
-      window.removeEventListener("pointerup", releaseTouchPointer, true);
-      window.removeEventListener("pointercancel", releaseTouchPointer, true);
-      window.removeEventListener("touchmove", guardTouchMove, true);
+      removeTouchGuard();
     };
   }, [config]);
   useEffect(() => {
@@ -316,11 +311,6 @@ export function MapView({ config }: { config: Config }) {
           visibility: activeRoute || awaitingRegion ? "hidden" : "visible",
         }}
       />
-      {gestureHint && !activeRoute && (
-        <div className="map-gesture-hint" role="status" aria-live="polite">
-          使用双指移动地图
-        </div>
-      )}
       {awaitingRegion && !error && !activeRoute && (
         <div className="map-loading" role="status" aria-live="polite">
           <div className="map-loading-skeleton" aria-hidden="true">
