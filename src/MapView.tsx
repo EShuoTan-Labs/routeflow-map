@@ -65,6 +65,42 @@ export function MapView({ config }: { config: Config }) {
     setResults((prev) => ({ ...prev, [i]: result }));
   useEffect(() => {
     let disposed = false;
+    const mapHost = host.current;
+    const activeTouchPointers = new Set<number>();
+    const startsOnMap = (event: Event) =>
+      !!mapHost &&
+      event.target instanceof Node &&
+      mapHost.contains(event.target);
+    const trackTouchPointer = (event: PointerEvent) => {
+      if (event.pointerType === "touch" && startsOnMap(event))
+        activeTouchPointers.add(event.pointerId);
+    };
+    const releaseTouchPointer = (event: PointerEvent) => {
+      activeTouchPointers.delete(event.pointerId);
+    };
+    const guardPointerMove = (event: PointerEvent) => {
+      if (
+        event.pointerType === "touch" &&
+        activeTouchPointers.has(event.pointerId) &&
+        activeTouchPointers.size < 2
+      )
+        event.stopImmediatePropagation();
+    };
+    const guardTouchMove = (event: TouchEvent) => {
+      if (startsOnMap(event) && event.touches.length < 2)
+        event.stopImmediatePropagation();
+    };
+    // Some mobile WebViews do not consistently honor Google Maps'
+    // cooperative mode inside nested iframes. Capture movement before the map
+    // sees it so one finger remains available for scrolling the host document.
+    window.addEventListener("pointerdown", trackTouchPointer, true);
+    window.addEventListener("pointermove", guardPointerMove, true);
+    window.addEventListener("pointerup", releaseTouchPointer, true);
+    window.addEventListener("pointercancel", releaseTouchPointer, true);
+    window.addEventListener("touchmove", guardTouchMove, {
+      capture: true,
+      passive: true,
+    });
     setResults({});
     setMarkerReady(false);
     setMapConfig(null);
@@ -127,6 +163,11 @@ export function MapView({ config }: { config: Config }) {
     return () => {
       disposed = true;
       runner.current.cancel();
+      window.removeEventListener("pointerdown", trackTouchPointer, true);
+      window.removeEventListener("pointermove", guardPointerMove, true);
+      window.removeEventListener("pointerup", releaseTouchPointer, true);
+      window.removeEventListener("pointercancel", releaseTouchPointer, true);
+      window.removeEventListener("touchmove", guardTouchMove, true);
     };
   }, [config]);
   useEffect(() => {

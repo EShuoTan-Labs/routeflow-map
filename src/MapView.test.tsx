@@ -187,9 +187,29 @@ describe("pin map", () => {
   });
 
   it("lets touch users scroll with one finger and move the map with two", async () => {
-    setup();
+    const view = setup();
     await waitFor(() => expect(maps).toHaveLength(1));
     expect(maps[0].options.gestureHandling).toBe("cooperative");
+
+    const mapHost = document.querySelector(".google-map")!;
+    const mapSurface = document.createElement("div");
+    const mapTouchMove = vi.fn();
+    mapSurface.addEventListener("touchmove", mapTouchMove);
+    mapHost.append(mapSurface);
+    const move = (touches: object[]) => {
+      const event = new Event("touchmove", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "touches", { value: touches });
+      mapSurface.dispatchEvent(event);
+    };
+
+    move([{}]);
+    expect(mapTouchMove).not.toHaveBeenCalled();
+    move([{}, {}]);
+    expect(mapTouchMove).toHaveBeenCalledTimes(1);
+
+    view.unmount();
+    move([{}]);
+    expect(mapTouchMove).toHaveBeenCalledTimes(2);
   });
 
   it("draws numbered pins and two-endpoint straight lines without service requests", async () => {
