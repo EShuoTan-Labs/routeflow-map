@@ -196,14 +196,12 @@ describe("pin map", () => {
     const mapTouchMove = vi.fn();
     mapSurface.addEventListener("touchmove", mapTouchMove);
     mapHost.append(mapSurface);
-    const move = (touches: object[]) => {
-      const event = new Event("touchmove", { bubbles: true, cancelable: true });
-      Object.defineProperty(event, "touches", { value: touches });
-      mapSurface.dispatchEvent(event);
-    };
+    const move = (touches: object[]) =>
+      fireEvent.touchMove(mapSurface, { touches });
 
     move([{}]);
     expect(mapTouchMove).not.toHaveBeenCalled();
+    expect(screen.getByText("使用双指移动地图")).toBeTruthy();
     move([{}, {}]);
     expect(mapTouchMove).toHaveBeenCalledTimes(1);
 
