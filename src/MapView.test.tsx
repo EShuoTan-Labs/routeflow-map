@@ -186,7 +186,7 @@ describe("pin map", () => {
     expect(geocode).not.toHaveBeenCalled();
   });
 
-  it("delegates cooperative touch handling and its native prompt to Google", async () => {
+  it("zooms directly with a mouse wheel while delegating touch gestures to Google", async () => {
     setup();
     await waitFor(() => expect(maps).toHaveLength(1));
     expect(maps[0].options.gestureHandling).toBe("cooperative");
@@ -197,6 +197,11 @@ describe("pin map", () => {
     document.querySelector(".google-map")!.append(mapSurface);
     fireEvent.touchMove(mapSurface, { touches: [{}] });
     expect(touchMove).toHaveBeenCalledTimes(1);
+
+    fireEvent.wheel(mapSurface, { deltaY: -100 });
+    expect(maps[0].setZoom).toHaveBeenLastCalledWith(16);
+    fireEvent.wheel(mapSurface, { deltaY: 100 });
+    expect(maps[0].setZoom).toHaveBeenLastCalledWith(14);
   });
 
   it("draws numbered pins and two-endpoint straight lines without service requests", async () => {

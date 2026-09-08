@@ -66,6 +66,45 @@ export function MapView({ config }: { config: Config }) {
     setResults((prev) => ({ ...prev, [i]: result }));
   useEffect(() => {
     let disposed = false;
+    let wheelDelta = 0;
+    const mapHost = host.current;
+    const directWheelZoom = (event: WheelEvent) => {
+      if (
+        !mapHost ||
+        !map.current ||
+        event.ctrlKey ||
+        event.metaKey ||
+        !(event.target instanceof Node) ||
+        !mapHost.contains(event.target) ||
+        event.deltaY === 0
+      )
+        return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const scale =
+        event.deltaMode === 1
+          ? 16
+          : event.deltaMode === 2
+            ? Math.max(mapHost.clientHeight, 1)
+            : 1;
+      const delta = event.deltaY * scale;
+      if (wheelDelta && Math.sign(wheelDelta) !== Math.sign(delta))
+        wheelDelta = 0;
+      wheelDelta += delta;
+      if (Math.abs(wheelDelta) < 40) return;
+      const zoom = map.current.getZoom();
+      if (typeof zoom === "number")
+        map.current.setZoom(
+          Math.max(0, Math.min(21, zoom - Math.sign(wheelDelta))),
+        );
+      wheelDelta = 0;
+    };
+    // Keep Google's cooperative touch handling while making an unmodified
+    // mouse wheel zoom directly on desktop.
+    window.addEventListener("wheel", directWheelZoom, {
+      capture: true,
+      passive: false,
+    });
     setResults({});
     setMarkerReady(false);
     setMapConfig(null);
@@ -128,6 +167,7 @@ export function MapView({ config }: { config: Config }) {
     return () => {
       disposed = true;
       runner.current.cancel();
+      window.removeEventListener("wheel", directWheelZoom, true);
     };
   }, [config]);
   useEffect(() => {
