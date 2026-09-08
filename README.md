@@ -6,9 +6,9 @@
 
 ## 开始使用
 
-1. 在 [Google Cloud Console](https://console.cloud.google.com/) 创建项目并关联计费账户，启用 **Maps JavaScript API** 和 **Maps Embed API**。使用地址输入时，同时启用 **Geocoding API**。
+1. 在 [Google Cloud Console](https://console.cloud.google.com/) 创建项目并关联计费账户，启用 **Maps JavaScript API** 和 **Maps Embed API**。使用地址输入时，同时启用 **Geocoding API**；输入地址联想需启用 **Places API (New)**，并将它加入 Key 的 API 限制允许列表。
 2. 创建浏览器 API Key，应用限制选择「网站」，添加 `https://eshuotan-labs.github.io/*`，并将 API 限制设为所需服务。
-3. 在编辑器填写 Key 和至少两个地点。支持完整地址或 `纬度,经度`，拖动地点左侧手柄调整顺序。
+3. 在编辑器填写 Key 和至少两个地点。输入至少两个字符后显示地址建议，可点击选择或用上下方向键和 Enter 确认，Escape 关闭。支持完整地址或 `纬度,经度`，拖动地点左侧手柄调整顺序。
 4. 点击「预览地图」，查看编号图钉和直线连线，然后复制嵌入链接。修改后再次预览即可生成新链接。
 5. 在 Notion 输入 `/embed`，粘贴链接并确认，建议嵌入高度至少 400px。其他网站可复制 iframe 代码。
 

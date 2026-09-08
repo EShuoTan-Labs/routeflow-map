@@ -4,6 +4,7 @@ import { parse, validate, makeUrl, readableUrl, type Config } from "./config";
 import { MapView } from "./MapView";
 import { loadApiKey, saveApiKey } from "./storage";
 import "./style.css";
+import { AddressInput } from "./AddressInput";
 const parsed = parse(window.location.search);
 const initial = {
   ...parsed,
@@ -155,7 +156,7 @@ function App() {
           </div>
           <p className="hint">
             底图使用 Maps JavaScript API；地址定位使用 Geocoding
-            API；公共交通路线使用 Maps Embed
+            API；输入联想使用 Places API (New)；公共交通路线使用 Maps Embed
             API。密钥保存在此浏览器并随嵌入链接共享，请设置域名限制。
           </p>
           <div className="stops-heading">
@@ -231,16 +232,17 @@ function App() {
                   <span className="stop-number">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <input
-                    aria-label={`地点 ${i + 1}`}
+                  <AddressInput
+                    apiKey={config.key}
+                    label={`地点 ${i + 1}`}
                     value={point}
                     placeholder={
                       i === 0 ? "起点 · 地址或经纬度" : "下一站 · 地址或经纬度"
                     }
-                    onChange={(e) =>
+                    onChange={(value) =>
                       set({
                         points: config.points.map((p, j) =>
-                          j === i ? e.target.value : p,
+                          j === i ? value : p,
                         ),
                       })
                     }
