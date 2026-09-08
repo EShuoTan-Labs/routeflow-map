@@ -2,6 +2,36 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { type Config, makeUrl } from "./config";
 import { loadGoogle } from "./google";
 import { PointRunner, type PointResult, type Locate } from "./routes";
+function MapIcon({
+  name,
+}: {
+  name: "back" | "fit" | "edit" | "route" | "retry";
+}) {
+  const paths = {
+    back: "M19 12H5m6-6-6 6 6 6",
+    fit: "M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M8 12h8m-4-4v8",
+    edit: "m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z",
+    route:
+      "M7 6h9a4 4 0 0 1 0 8H8a4 4 0 0 0 0 8m-1-19a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm10 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z",
+    retry:
+      "M20 7v5h-5M4 17v-5h5m10-4a8 8 0 0 0-13-2L4 9m16 6-2 3a8 8 0 0 1-13-2",
+  };
+  return (
+    <svg
+      className="map-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d={paths[name]} />
+    </svg>
+  );
+}
 export function MapView({ config }: { config: Config }) {
   const host = useRef<HTMLDivElement>(null),
     map = useRef<any>(null);
@@ -186,28 +216,34 @@ export function MapView({ config }: { config: Config }) {
       <div className={`map-controls${activeRoute ? " route-controls" : ""}`}>
         {activeRoute ? (
           <button
+            aria-label="返回总览"
+            title="返回总览"
             onClick={() => {
               setActiveRoute(null);
               setSelected(null);
             }}
           >
-            返回总览
+            <MapIcon name="back" />
           </button>
         ) : (
           <button
+            aria-label="重置缩放"
+            title="重置缩放"
             onClick={resetZoom}
             disabled={!Object.values(results).some((r) => r.position)}
           >
-            重置缩放
+            <MapIcon name="fit" />
           </button>
         )}
         {!activeRoute && (
           <a
+            aria-label="编辑行程 ↗"
+            title="编辑行程（新窗口）"
             href={makeUrl(config, window.location.href, "editor")}
             target="_blank"
             rel="noreferrer"
           >
-            编辑行程 ↗
+            <MapIcon name="edit" />
           </a>
         )}
       </div>
@@ -232,10 +268,16 @@ export function MapView({ config }: { config: Config }) {
           if (!e.currentTarget.open) setSelected(null);
         }}
       >
-        <summary>
-          行程连线 · {config.points.length} 个图钉
-          <span>
-            {error ? "加载失败" : busy ? "定位中…" : "双击查看公共交通路线"}
+        <summary
+          aria-label={`行程连线 · ${config.points.length} 个图钉`}
+          title="展开或收起行程连线"
+        >
+          <MapIcon name="route" />
+          <span className="route-summary-copy">
+            <strong>行程连线 · {config.points.length} 个图钉</strong>
+            <span className="route-summary-status">
+              {error ? "加载失败" : busy ? "定位中…" : "双击查看公共交通路线"}
+            </span>
           </span>
         </summary>
         {config.points.map(
@@ -247,6 +289,9 @@ export function MapView({ config }: { config: Config }) {
                 </strong>
                 <p role="alert">{results[i].error}</p>
                 <button
+                  className="map-icon-button"
+                  aria-label={`重试地点 ${i + 1}`}
+                  title={`重试地点 ${i + 1}`}
                   disabled={busy}
                   onClick={() =>
                     locate.current &&
@@ -255,7 +300,7 @@ export function MapView({ config }: { config: Config }) {
                     ])
                   }
                 >
-                  重试地点 {i + 1}
+                  <MapIcon name="retry" />
                 </button>
               </article>
             ),
