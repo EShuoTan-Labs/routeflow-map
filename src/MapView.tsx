@@ -12,9 +12,18 @@ import { PointRunner, type PointResult, type Locate } from "./routes";
 function MapIcon({
   name,
 }: {
-  name: "back" | "fit" | "edit" | "route" | "retry";
+  name:
+    | "back"
+    | "fit"
+    | "edit"
+    | "route"
+    | "retry"
+    | "fullscreen"
+    | "exitFullscreen";
 }) {
   const paths = {
+    fullscreen: "M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5",
+    exitFullscreen: "M3 8h5V3m8 0v5h5M8 21v-5H3m18 0h-5v5",
     back: "M19 12H5m6-6-6 6 6 6",
     fit: "M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M8 12h8m-4-4v8",
     edit: "m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z",
@@ -41,6 +50,26 @@ function MapIcon({
 }
 
 export function MapView({ config }: { config: Config }) {
+  const container = useRef<HTMLElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreenError, setFullscreenError] = useState("");
+  useEffect(() => {
+    const syncFullscreen = () =>
+      setFullscreen(document.fullscreenElement === container.current);
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () =>
+      document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+  async function toggleFullscreen() {
+    setFullscreenError("");
+    try {
+      if (document.fullscreenElement === container.current)
+        await document.exitFullscreen();
+      else await container.current?.requestFullscreen();
+    } catch {
+      setFullscreenError("无法切换全屏，请检查浏览器或嵌入页面的全屏权限。");
+    }
+  }
   const host = useRef<HTMLDivElement>(null),
     map = useRef<any>(null);
   const runner = useRef(new PointRunner()),
@@ -193,7 +222,7 @@ export function MapView({ config }: { config: Config }) {
           mapId: "DEMO_MAP_ID",
           mapTypeControl: false,
           streetViewControl: false,
-          fullscreenControl: true,
+          fullscreenControl: false,
           gestureHandling: "cooperative",
         });
         setMapConfig(config);
@@ -336,7 +365,7 @@ export function MapView({ config }: { config: Config }) {
     );
   }
   return (
-    <main className="embed-map">
+    <main className="embed-map" ref={container}>
       <div
         className="google-map"
         ref={host}
@@ -368,6 +397,15 @@ export function MapView({ config }: { config: Config }) {
         />
       ))}
       <div className={`map-controls${activeRoute ? " route-controls" : ""}`}>
+        {document.fullscreenEnabled && (
+          <button
+            aria-label={fullscreen ? "退出全屏" : "全屏"}
+            title={fullscreen ? "退出全屏" : "全屏"}
+            onClick={toggleFullscreen}
+          >
+            <MapIcon name={fullscreen ? "exitFullscreen" : "fullscreen"} />
+          </button>
+        )}
         {activeRoute ? (
           <button
             aria-label="返回总览"
@@ -401,6 +439,11 @@ export function MapView({ config }: { config: Config }) {
           </a>
         )}
       </div>
+      {fullscreenError && (
+        <div className="map-error" role="alert">
+          {fullscreenError}
+        </div>
+      )}
       {error && !activeRoute && (
         <div className="map-error" role="alert">
           <strong>地图暂时无法加载</strong>

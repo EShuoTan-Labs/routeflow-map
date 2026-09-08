@@ -107,6 +107,53 @@ afterEach(() => {
   maps.length = 0;
 });
 describe("pin map", () => {
+  it("opens the entire map and its controls in fullscreen and follows Escape", async () => {
+    let fullscreenElement: Element | null = null;
+    Object.defineProperty(document, "fullscreenEnabled", {
+      configurable: true,
+      get: () => true,
+    });
+    Object.defineProperty(document, "fullscreenElement", {
+      configurable: true,
+      get: () => fullscreenElement,
+    });
+    const view = setup();
+    const container = view.container.querySelector("main")!;
+    const request = vi.fn(async () => {
+      fullscreenElement = container;
+      document.dispatchEvent(new Event("fullscreenchange"));
+    });
+    container.requestFullscreen = request;
+    const exit = vi.fn(async () => {
+      fullscreenElement = null;
+      document.dispatchEvent(new Event("fullscreenchange"));
+    });
+    const originalExit = document.exitFullscreen;
+    document.exitFullscreen = exit;
+    try {
+      await waitFor(() => expect(maps.length).toBeGreaterThan(0));
+      expect(maps[0].options.fullscreenControl).toBe(false);
+      fireEvent.click(screen.getByRole("button", { name: "全屏" }));
+      await screen.findByRole("button", { name: "退出全屏" });
+      expect(request).toHaveBeenCalledOnce();
+      expect(
+        container.contains(screen.getByRole("button", { name: "重置缩放" })),
+      ).toBe(true);
+      expect(container.querySelector(".route-summary")).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "退出全屏" }));
+      await screen.findByRole("button", { name: "全屏" });
+      expect(exit).toHaveBeenCalledOnce();
+      fireEvent.click(screen.getByRole("button", { name: "全屏" }));
+      await screen.findByRole("button", { name: "退出全屏" });
+      fullscreenElement = null;
+      fireEvent(document, new Event("fullscreenchange"));
+      expect(screen.getByRole("button", { name: "全屏" })).toBeTruthy();
+    } finally {
+      Reflect.deleteProperty(document, "fullscreenEnabled");
+      Reflect.deleteProperty(document, "fullscreenElement");
+      document.exitFullscreen = originalExit;
+    }
+  });
   it("combines exact coordinates in itinerary order while keeping nearby pins and route segments", async () => {
     setup(["0,0", "0,0.0000001", "0,0", "0.0000001,0", "0,0"]);
     await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(3));
