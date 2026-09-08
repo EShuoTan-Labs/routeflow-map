@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { type Config, makeUrl } from "./config";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { type Config, makeUrl, location } from "./config";
 import { loadGoogle } from "./google";
+import { cachedLocate } from "./geocodingCache";
 import { PointRunner, type PointResult, type Locate } from "./routes";
 function MapIcon({
   name,
@@ -37,6 +44,16 @@ export function MapView({ config }: { config: Config }) {
     map = useRef<any>(null);
   const runner = useRef(new PointRunner()),
     locate = useRef<Locate | null>(null);
+  const [mapConfig, setMapConfig] = useState<Config | null>(null);
+  const [markerReady, setMarkerReady] = useState(false);
+  const [visibleConfig, setVisibleConfig] = useState<Config | null>(null);
+  const hasAddresses = config.points.some((point) => {
+    try {
+      return typeof location(point) === "string";
+    } catch {
+      return true;
+    }
+  });
   const [results, setResults] = useState<Record<number, PointResult>>({});
   const [routeFrames, setRouteFrames] = useState<
     { url: string; title: string }[]
@@ -49,6 +66,9 @@ export function MapView({ config }: { config: Config }) {
   useEffect(() => {
     let disposed = false;
     setResults({});
+    setMarkerReady(false);
+    setMapConfig(null);
+    setVisibleConfig(null);
     setError("");
     setSelected(null);
     setActiveRoute(null);
@@ -57,10 +77,32 @@ export function MapView({ config }: { config: Config }) {
     locate.current = null;
     loadGoogle(config.key)
       .then(async () => {
-        const [{ Map }] = await Promise.all([
-          window.google.maps.importLibrary("maps"),
-          window.google.maps.importLibrary("marker"),
-        ]);
+        const mapsLibrary = window.google.maps.importLibrary("maps");
+        const markerLibrary = window.google.maps.importLibrary("marker");
+        let geocoder: Promise<any> | undefined;
+        locate.current = cachedLocate(async (address) => {
+          geocoder ??= window.google.maps
+            .importLibrary("geocoding")
+            .then(({ Geocoder }: any) => new Geocoder());
+          const { results } = await (await geocoder).geocode({ address });
+          const position = results[0]?.geometry?.location;
+          if (!position) throw new Error("ZERO_RESULTS");
+          return { lat: position.lat(), lng: position.lng() };
+        });
+        const locating = runner.current.run(
+          config.points,
+          locate.current,
+          update,
+        );
+        const markersLoaded = markerLibrary.then(() => {
+          if (!disposed) setMarkerReady(true);
+        });
+        // Observe failures immediately while map creation proceeds independently.
+        const pending = Promise.all([markersLoaded, locating]);
+        void pending.catch((e) => {
+          if (!disposed) setError(e.message);
+        });
+        const { Map } = await mapsLibrary;
         if (disposed) return;
         window.gm_authFailure = () => {
           if (!disposed)
@@ -76,17 +118,8 @@ export function MapView({ config }: { config: Config }) {
           fullscreenControl: true,
           gestureHandling: "greedy",
         });
-        let geocoder: Promise<any> | undefined;
-        locate.current = async (address) => {
-          geocoder ??= window.google.maps
-            .importLibrary("geocoding")
-            .then(({ Geocoder }: any) => new Geocoder());
-          const { results } = await (await geocoder).geocode({ address });
-          const position = results[0]?.geometry?.location;
-          if (!position) throw new Error("ZERO_RESULTS");
-          return { lat: position.lat(), lng: position.lng() };
-        };
-        await runner.current.run(config.points, locate.current, update);
+        setMapConfig(config);
+        await pending;
       })
       .catch((e) => {
         if (!disposed) setError(e.message);
@@ -97,7 +130,7 @@ export function MapView({ config }: { config: Config }) {
     };
   }, [config]);
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || mapConfig !== config || !markerReady) return;
     const g = window.google.maps,
       overlays: any[] = [],
       listeners: any[] = [];
@@ -137,7 +170,7 @@ export function MapView({ config }: { config: Config }) {
         else o.map = null;
       });
     };
-  }, [results, selected, config]);
+  }, [results, selected, config, markerReady, mapConfig]);
   const resetZoom = useCallback(() => {
     if (!map.current) return;
     const positions = Object.values(results).flatMap((r) =>
@@ -155,10 +188,22 @@ export function MapView({ config }: { config: Config }) {
       map.current.setZoom(14);
     } else map.current.fitBounds(bounds, 60);
   }, [results]);
-  useEffect(resetZoom, [resetZoom]);
   const busy =
     Object.keys(results).length < config.points.length ||
     Object.values(results).some((r) => r.status === "loading");
+  useLayoutEffect(() => {
+    if (busy || !map.current || mapConfig !== config) return;
+    const positions = Object.values(results).some((r) => r.position);
+    if (!positions) return;
+    const listener = map.current.addListener("idle", () => {
+      setVisibleConfig(config);
+      listener.remove();
+    });
+    resetZoom();
+    return () => listener.remove();
+  }, [busy, resetZoom, config, mapConfig]);
+  const awaitingRegion = hasAddresses && visibleConfig !== config;
+  const allFailed = !busy && !Object.values(results).some((r) => r.position);
   function showRoute(i: number) {
     if (!map.current || busy || error) return;
     const start = results[i]?.position,
@@ -200,8 +245,21 @@ export function MapView({ config }: { config: Config }) {
         className="google-map"
         ref={host}
         aria-label="行程地图"
-        style={{ visibility: activeRoute ? "hidden" : "visible" }}
+        style={{
+          visibility: activeRoute || awaitingRegion ? "hidden" : "visible",
+        }}
       />
+      {awaitingRegion && !error && !activeRoute && (
+        <div className="map-loading" role="status" aria-live="polite">
+          <div className="map-loading-skeleton" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </div>
+          <strong>{allFailed ? "暂未定位到行程地点" : "正在定位行程…"}</strong>
+          {allFailed && <span>展开行程连线查看详情并重试</span>}
+        </div>
+      )}
       {routeFrames.map((frame) => (
         <iframe
           key={frame.url}
@@ -230,7 +288,7 @@ export function MapView({ config }: { config: Config }) {
             aria-label="重置缩放"
             title="重置缩放"
             onClick={resetZoom}
-            disabled={!Object.values(results).some((r) => r.position)}
+            disabled={busy || !Object.values(results).some((r) => r.position)}
           >
             <MapIcon name="fit" />
           </button>

@@ -995,3 +995,38 @@ footer {
 .route-arrow {
   color: #8193a6;
 }
+
+.map-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: #edf2f6;
+  color: #45627c;
+}
+.map-loading-skeleton {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.map-loading-skeleton i {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #cbd9e5;
+}
+.map-loading-skeleton i:nth-child(2) {
+  width: 70px;
+  height: 8px;
+  border-radius: 4px;
+}
+:root[data-theme="dark"] .map-loading {
+  background: #162431;
+  color: #a3cbed;
+}
+:root[data-theme="dark"] .map-loading-skeleton i {
+  background: #324a60;
+}

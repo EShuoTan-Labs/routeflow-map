@@ -16,6 +16,10 @@ const lines: any[] = [],
   markers: any[] = [],
   maps: FakeMap[] = [];
 class FakeMap {
+  addListener = vi.fn((_event: string, callback: () => void) => {
+    queueMicrotask(callback);
+    return { remove: vi.fn() };
+  });
   getZoom = vi.fn(() => 15);
   getCenter = vi.fn(() => ({ lat: (): number => 0.5, lng: (): number => 0.5 }));
   fitBounds = vi.fn();
@@ -77,6 +81,7 @@ const position = (lat: number, lng: number) => ({
 });
 afterEach(() => {
   cleanup();
+  localStorage.clear();
   vi.clearAllMocks();
   geocode.mockReset();
   lines.length = 0;
@@ -84,6 +89,47 @@ afterEach(() => {
   maps.length = 0;
 });
 describe("pin map", () => {
+  it("creates the map before markers load and fits once after all addresses settle", async () => {
+    let resolveMarker!: (value: object) => void;
+    let resolveFirst!: (value: ReturnType<typeof position>) => void;
+    let resolveLast!: (value: ReturnType<typeof position>) => void;
+    geocode
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveLast = resolve;
+          }),
+      );
+    setup(["First", "Last"]);
+    const original = imports.getMockImplementation()!;
+    imports.mockImplementation((name: string) =>
+      name === "marker"
+        ? new Promise((resolve) => {
+            resolveMarker = resolve;
+          })
+        : original(name),
+    );
+    await waitFor(() => expect(maps).toHaveLength(1));
+    expect(screen.getByRole("status").textContent).toContain("正在定位行程");
+    expect(markers).toHaveLength(0);
+    resolveFirst(position(10, 20));
+    await waitFor(() => expect(geocode).toHaveBeenCalledTimes(2));
+    expect(maps[0].fitBounds).not.toHaveBeenCalled();
+    expect(maps[0].setCenter).not.toHaveBeenCalled();
+    resolveLast(position(30, 40));
+    await waitFor(() => expect(maps[0].fitBounds).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+    resolveMarker({});
+    await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(2));
+    expect(maps[0].fitBounds).toHaveBeenCalledTimes(1);
+  });
+
   it("loads transit on double click, preserves zoom and reuses mounted frames and overview", async () => {
     setup();
     await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(3));
