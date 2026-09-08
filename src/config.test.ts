@@ -3,11 +3,24 @@ import {
   defaults,
   location,
   makeUrl,
+  readableUrl,
   parse,
   validate,
   type Config,
 } from "./config";
 describe("URL configuration", () => {
+  it("shows Chinese in copyable links while preserving query values", () => {
+    const c: Config = {
+      ...defaults,
+      view: "embed",
+      key: "example-key",
+      points: ["东京站 & 丸之内+出口#1?路线=北%20", "浅草寺，东京 🗼"],
+    };
+    const url = readableUrl(makeUrl(c, "https://example.com/"));
+    expect(url).toContain("东京站");
+    expect(url).toContain("浅草寺，东京");
+    expect(parse(new URL(url).search)).toEqual({ config: c, errors: [] });
+  });
   it("round trips addresses and coordinates under a project path", () => {
     const c: Config = {
       ...defaults,

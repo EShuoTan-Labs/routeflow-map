@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { useEffect, useState } from "react";
-import { parse, validate, makeUrl, type Config } from "./config";
+import { parse, validate, makeUrl, readableUrl, type Config } from "./config";
 import { MapView } from "./MapView";
 import { loadApiKey, saveApiKey } from "./storage";
 import "./style.css";
@@ -23,6 +23,7 @@ function App() {
     [share, setShare] = useState(""),
     [copied, setCopied] = useState("");
   const [previewRevision, setPreviewRevision] = useState(0);
+  const chineseShare = readableUrl(share);
   const [showKey, setShowKey] = useState(false);
   const [dragged, setDragged] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
@@ -359,6 +360,17 @@ function App() {
               </button>
             </div>
             {share && <textarea aria-label="嵌入链接" readOnly value={share} />}
+            {share && (
+              <div className="readable-share">
+                <div className="share-actions">
+                  <label htmlFor="chinese-share">中文嵌入链接</label>
+                  <button onClick={() => copy(chineseShare, "中文链接")}>
+                    复制中文链接 ↗
+                  </button>
+                </div>
+                <textarea id="chinese-share" readOnly value={chineseShare} />
+              </div>
+            )}
             <div role="status">{copied}</div>
           </section>
         </section>

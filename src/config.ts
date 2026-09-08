@@ -4,6 +4,16 @@ export type Config = {
   points: string[];
 };
 export const defaults: Config = { key: "", view: "editor", points: ["", ""] };
+export function readableUrl(url: string): string {
+  // Decode UTF-8 characters while preserving escaped URL separators and ASCII.
+  return url.replace(/(?:%[c-f][0-9a-f](?:%[89ab][0-9a-f])+)+/gi, (encoded) => {
+    try {
+      return decodeURIComponent(encoded);
+    } catch {
+      return encoded;
+    }
+  });
+}
 export function location(value: string): string | { lat: number; lng: number } {
   const text = value.trim().replace(/[，、]/g, ",");
   if (!text) throw new Error("请填写地点");

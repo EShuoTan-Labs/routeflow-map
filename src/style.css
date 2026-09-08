@@ -490,6 +490,16 @@ iframe {
 .share [role="status"] {
   font-size: 11px;
 }
+.readable-share {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+}
+.readable-share .share-actions {
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
 .share [role="status"]:empty {
   display: none;
 }
