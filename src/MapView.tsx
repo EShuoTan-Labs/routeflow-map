@@ -179,10 +179,13 @@ export function MapView({ config }: { config: Config }) {
       const position = results[i]?.position;
       if (!position) return;
       const el = document.createElement("div");
-      el.className = "map-pin";
+      el.className = "map-pin-anchor";
+      const pin = document.createElement("div");
+      pin.className = "map-pin";
       const label = document.createElement("span");
       label.textContent = String(i + 1);
-      el.append(label);
+      pin.append(label);
+      el.append(pin);
       overlays.push(
         new g.marker.AdvancedMarkerElement({
           map: map.current,

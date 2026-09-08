@@ -670,12 +670,22 @@ footer {
   width: min(360px, 90%);
   line-height: 1.9;
 }
+.map-pin-anchor {
+  position: relative;
+  width: 32px;
+  height: 40px;
+}
 .map-pin {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
   background: #2f6da6;
   color: white;
   border: 2px solid white;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
+  /* Keep the pointed corner at the marker's bottom-center coordinate. */
+  transform-origin: bottom left;
   width: 32px;
   height: 32px;
   display: grid;
