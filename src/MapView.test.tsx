@@ -7,7 +7,7 @@ import {
   cleanup,
 } from "@testing-library/react";
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { installTwoFingerTouchGuard, MapView } from "./MapView";
+import { MapView } from "./MapView";
 import { defaults } from "./config";
 vi.mock("./google", () => ({ loadGoogle: vi.fn(async () => {}) }));
 const geocode = vi.fn(),
@@ -186,33 +186,17 @@ describe("pin map", () => {
     expect(geocode).not.toHaveBeenCalled();
   });
 
-  it("lets touch users scroll with one finger and move the map with two", async () => {
+  it("delegates cooperative touch handling and its native prompt to Google", async () => {
     setup();
     await waitFor(() => expect(maps).toHaveLength(1));
     expect(maps[0].options.gestureHandling).toBe("cooperative");
 
-    const mapHost = document.querySelector(".google-map")!;
     const mapSurface = document.createElement("div");
-    const mapTouchMove = vi.fn();
-    mapSurface.addEventListener("touchmove", mapTouchMove);
-    mapHost.append(mapSurface);
-    const move = (touches: object[]) =>
-      fireEvent.touchMove(mapSurface, { touches });
-
-    // The same-origin editor preview leaves the event available to Google so
-    // its native cooperative-mode prompt can appear.
-    move([{}]);
-    expect(mapTouchMove).toHaveBeenCalledTimes(1);
-
-    const removeTouchGuard = installTwoFingerTouchGuard(mapHost as HTMLElement);
-    move([{}]);
-    expect(mapTouchMove).toHaveBeenCalledTimes(1);
-    move([{}, {}]);
-    expect(mapTouchMove).toHaveBeenCalledTimes(2);
-
-    removeTouchGuard();
-    move([{}]);
-    expect(mapTouchMove).toHaveBeenCalledTimes(3);
+    const touchMove = vi.fn();
+    mapSurface.addEventListener("touchmove", touchMove);
+    document.querySelector(".google-map")!.append(mapSurface);
+    fireEvent.touchMove(mapSurface, { touches: [{}] });
+    expect(touchMove).toHaveBeenCalledTimes(1);
   });
 
   it("draws numbered pins and two-endpoint straight lines without service requests", async () => {
