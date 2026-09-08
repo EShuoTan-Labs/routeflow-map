@@ -1,3 +1,5 @@
+declare const __APP_VERSION__: string;
+
 export type Config = {
   key: string;
   view: "editor" | "embed";
@@ -71,5 +73,7 @@ export function makeUrl(
   url.searchParams.set("view", view);
   url.searchParams.set("key", c.key.trim());
   c.points.forEach((p) => url.searchParams.append("point", p.trim()));
+  // Refresh embedded HTML when the editor's deployed build changes.
+  url.searchParams.set("v", __APP_VERSION__);
   return url.href;
 }

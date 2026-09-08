@@ -50,7 +50,11 @@ describe("URL configuration", () => {
     expect(errors).toEqual([]);
     expect([
       ...new URL(makeUrl(config, "https://example.com")).searchParams.keys(),
-    ]).toEqual(["view", "key", "point", "point"]);
+    ]).toEqual(["view", "key", "point", "point", "v"]);
+    const current = new URL(makeUrl(config, "https://example.com/?v=old"));
+    expect(current.searchParams.get("v")).toBeTruthy();
+    expect(current.searchParams.get("v")).not.toBe("old");
+    expect(makeUrl(config, current.href)).toBe(current.href);
   });
   it("validates view, key and points", () => {
     expect(parse("?view=bad&point=A&point=B").errors).toHaveLength(1);
