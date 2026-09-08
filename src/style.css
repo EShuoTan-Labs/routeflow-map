@@ -543,8 +543,9 @@ footer {
   gap: 8px;
 }
 .map-controls.route-controls {
-  left: auto;
-  right: 12px;
+  top: auto;
+  bottom: 72px;
+  left: 12px;
 }
 .map-controls button,
 .map-controls a,
