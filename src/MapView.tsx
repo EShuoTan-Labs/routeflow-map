@@ -116,7 +116,7 @@ export function MapView({ config }: { config: Config }) {
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: true,
-          gestureHandling: "greedy",
+          gestureHandling: "cooperative",
         });
         setMapConfig(config);
         await pending;

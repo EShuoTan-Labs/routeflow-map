@@ -186,10 +186,10 @@ describe("pin map", () => {
     expect(geocode).not.toHaveBeenCalled();
   });
 
-  it("zooms directly with the mouse wheel", async () => {
+  it("lets touch users scroll with one finger and move the map with two", async () => {
     setup();
     await waitFor(() => expect(maps).toHaveLength(1));
-    expect(maps[0].options.gestureHandling).toBe("greedy");
+    expect(maps[0].options.gestureHandling).toBe("cooperative");
   });
 
   it("draws numbered pins and two-endpoint straight lines without service requests", async () => {
