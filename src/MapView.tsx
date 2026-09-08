@@ -93,11 +93,27 @@ export function MapView({ config }: { config: Config }) {
       wheelDelta += delta;
       if (Math.abs(wheelDelta) < 40) return;
       const zoom = map.current.getZoom();
-      if (typeof zoom === "number")
-        map.current.setZoom(
-          Math.max(0, Math.min(21, zoom - Math.sign(wheelDelta))),
-        );
+      const direction = Math.sign(wheelDelta);
       wheelDelta = 0;
+      if (typeof zoom !== "number") return;
+      const nextZoom = Math.max(0, Math.min(21, zoom - direction));
+      const projection = map.current.getProjection();
+      const center = map.current.getCenter();
+      if (nextZoom === zoom || !projection || !center) return;
+      const point = projection.fromLatLngToPoint(center);
+      if (!point) return;
+      const rect = mapHost.getBoundingClientRect();
+      // Offset the center in world coordinates so the location beneath the
+      // cursor retains the same screen position at the new zoom level.
+      const scaleChange = 2 ** -zoom - 2 ** -nextZoom;
+      const nextCenter = projection.fromPointToLatLng(
+        new window.google.maps.Point(
+          point.x + (event.clientX - rect.left - rect.width / 2) * scaleChange,
+          point.y + (event.clientY - rect.top - rect.height / 2) * scaleChange,
+        ),
+      );
+      if (nextCenter)
+        map.current.moveCamera({ center: nextCenter, zoom: nextZoom });
     };
     // Keep Google's cooperative touch handling while making an unmodified
     // mouse wheel zoom directly on desktop.
