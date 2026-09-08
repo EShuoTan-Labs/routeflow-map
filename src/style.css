@@ -974,6 +974,32 @@ footer {
   transform: rotate(45deg);
   font-weight: 600;
 }
+.map-pin.map-pin-group {
+  width: max-content;
+  min-width: 40px;
+  padding: 0 8px;
+  bottom: 8px;
+  border-radius: 16px;
+  transform: translateX(-50%);
+}
+.map-pin-group::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  border-right: inherit;
+  border-bottom: inherit;
+  transform: translateX(-50%) rotate(45deg);
+}
+.map-pin-group span {
+  position: relative;
+  z-index: 1;
+  transform: none;
+  white-space: nowrap;
+}
 .map-caption {
   margin: 12px 2px 18px;
 }

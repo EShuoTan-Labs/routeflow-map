@@ -175,15 +175,23 @@ export function MapView({ config }: { config: Config }) {
     const g = window.google.maps,
       overlays: any[] = [],
       listeners: any[] = [];
-    config.points.forEach((point, i) => {
+    const pinGroups = new Map<string, number[]>();
+    config.points.forEach((_, i) => {
       const position = results[i]?.position;
       if (!position) return;
+      const key = `${position.lat},${position.lng}`;
+      const group = pinGroups.get(key);
+      if (group) group.push(i);
+      else pinGroups.set(key, [i]);
+    });
+    pinGroups.forEach((indices) => {
+      const position = results[indices[0]].position!;
       const el = document.createElement("div");
       el.className = "map-pin-anchor";
       const pin = document.createElement("div");
-      pin.className = "map-pin";
+      pin.className = `map-pin${indices.length > 1 ? " map-pin-group" : ""}`;
       const label = document.createElement("span");
-      label.textContent = String(i + 1);
+      label.textContent = indices.map((i) => i + 1).join("&");
       pin.append(label);
       el.append(pin);
       overlays.push(
@@ -191,9 +199,13 @@ export function MapView({ config }: { config: Config }) {
           map: map.current,
           position,
           content: el,
-          title: `${i + 1}. ${point}`,
+          title: indices.map((i) => `${i + 1}. ${config.points[i]}`).join("\n"),
         }),
       );
+    });
+    config.points.forEach((_, i) => {
+      const position = results[i]?.position;
+      if (!position) return;
       const next = results[i + 1]?.position;
       if (!next) return;
       const line = new g.Polyline({

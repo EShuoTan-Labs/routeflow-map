@@ -89,6 +89,39 @@ afterEach(() => {
   maps.length = 0;
 });
 describe("pin map", () => {
+  it("combines exact coordinates in itinerary order while keeping nearby pins and route segments", async () => {
+    setup(["0,0", "0,0.0000001", "0,0", "0.0000001,0", "0,0"]);
+    await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(3));
+    const active = markers.filter((m) => m.map);
+    expect(active.map((m) => m.options.content.textContent)).toEqual([
+      "1&3&5",
+      "2",
+      "4",
+    ]);
+    expect(active[0].options.title).toBe("1. 0,0\n3. 0,0\n5. 0,0");
+    expect(lines.filter((l) => l.map)).toHaveLength(4);
+  });
+
+  it("combines an address with an existing pin when its coordinates resolve", async () => {
+    let resolveAddress!: (value: ReturnType<typeof position>) => void;
+    geocode.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAddress = resolve;
+        }),
+    );
+    setup(["10,20", "Return stop"]);
+    await waitFor(() => expect(markers.filter((m) => m.map)).toHaveLength(1));
+    expect(markers.find((m) => m.map).options.content.textContent).toBe("1");
+    resolveAddress(position(10, 20));
+    await waitFor(() =>
+      expect(markers.find((m) => m.map).options.content.textContent).toBe(
+        "1&2",
+      ),
+    );
+    expect(markers.filter((m) => m.map)).toHaveLength(1);
+  });
+
   it("creates the map before markers load and fits once after all addresses settle", async () => {
     let resolveMarker!: (value: object) => void;
     let resolveFirst!: (value: ReturnType<typeof position>) => void;
