@@ -25,7 +25,13 @@ class FakeMap {
   fitBounds = vi.fn();
   setCenter = vi.fn();
   setZoom = vi.fn();
-  moveCamera = vi.fn();
+  moveCamera = vi.fn(({ center, zoom }: any) => {
+    this.getZoom.mockReturnValue(zoom);
+    this.getCenter.mockReturnValue({
+      lat: () => center.lat,
+      lng: () => center.lng,
+    });
+  });
   getProjection = vi.fn(() => ({
     fromLatLngToPoint: (p: any) => ({ x: p.lng(), y: p.lat() }),
     fromPointToLatLng: (p: any) => ({ lat: p.y, lng: p.x }),
@@ -92,6 +98,7 @@ const position = (lat: number, lng: number) => ({
 });
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   localStorage.clear();
   vi.clearAllMocks();
   geocode.mockReset();
@@ -234,6 +241,8 @@ describe("pin map", () => {
     setup();
     await waitFor(() => expect(maps).toHaveLength(1));
     expect(maps[0].options.gestureHandling).toBe("cooperative");
+    expect(maps[0].options.isFractionalZoomEnabled).toBe(true);
+    vi.useFakeTimers();
 
     const mapSurface = document.createElement("div");
     const touchMove = vi.fn();
@@ -243,20 +252,27 @@ describe("pin map", () => {
     expect(touchMove).toHaveBeenCalledTimes(1);
 
     fireEvent.wheel(mapSurface, { deltaY: -100 });
+    expect(maps[0].moveCamera).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(160);
+    expect(maps[0].getZoom()).toBeGreaterThan(15);
+    expect(maps[0].getZoom()).toBeLessThan(15.5);
+    vi.advanceTimersByTime(200);
     expect(maps[0].moveCamera).toHaveBeenLastCalledWith({
       center: { lat: 0.5, lng: 0.5 },
-      zoom: 16,
+      zoom: 15.5,
     });
     fireEvent.wheel(mapSurface, { deltaY: 100 });
+    vi.advanceTimersByTime(350);
     expect(maps[0].moveCamera).toHaveBeenLastCalledWith({
       center: { lat: 0.5, lng: 0.5 },
-      zoom: 14,
+      zoom: 15,
     });
   });
 
   it("keeps the location under an off-center cursor fixed while zooming in and out", async () => {
     setup();
     await waitFor(() => expect(maps).toHaveLength(1));
+    vi.useFakeTimers();
     const surface = document.querySelector(".google-map")!;
     vi.spyOn(surface, "getBoundingClientRect").mockReturnValue({
       left: 100,
@@ -265,16 +281,54 @@ describe("pin map", () => {
       height: 600,
     } as DOMRect);
     for (const deltaY of [-100, 100]) {
+      maps[0].getZoom.mockReturnValue(15);
+      maps[0].getCenter.mockReturnValue({ lat: () => 0.5, lng: () => 0.5 });
+      maps[0].moveCamera.mockClear();
       fireEvent.wheel(surface, { deltaY, clientX: 700, clientY: 200 });
-      const { center, zoom } = maps[0].moveCamera.mock.lastCall![0];
-      expect((0.5 + 200 / 2 ** 15 - center.lng) * 2 ** zoom).toBeCloseTo(200);
-      expect((0.5 - 150 / 2 ** 15 - center.lat) * 2 ** zoom).toBeCloseTo(-150);
+      vi.advanceTimersByTime(350);
+      expect(maps[0].moveCamera.mock.calls.length).toBeGreaterThan(10);
+      for (const [{ center, zoom }] of maps[0].moveCamera.mock.calls) {
+        expect((0.5 + 200 / 2 ** 15 - center.lng) * 2 ** zoom).toBeCloseTo(200);
+        expect((0.5 - 150 / 2 ** 15 - center.lat) * 2 ** zoom).toBeCloseTo(
+          -150,
+        );
+      }
     }
     maps[0].moveCamera.mockClear();
     maps[0].getZoom.mockReturnValue(21);
     fireEvent.wheel(surface, { deltaY: -100 });
     maps[0].getZoom.mockReturnValue(0);
     fireEvent.wheel(surface, { deltaY: 100 });
+    vi.advanceTimersByTime(350);
+    expect(maps[0].moveCamera).not.toHaveBeenCalled();
+  });
+
+  it("merges wheel input, reverses smoothly and cancels animation on interaction or unmount", async () => {
+    const view = setup();
+    await waitFor(() => expect(maps).toHaveLength(1));
+    vi.useFakeTimers();
+    const surface = document.querySelector(".google-map")!;
+    fireEvent.wheel(surface, { deltaY: -100 });
+    vi.advanceTimersByTime(80);
+    fireEvent.wheel(surface, { deltaY: -100 });
+    vi.advanceTimersByTime(350);
+    expect(maps[0].getZoom()).toBe(16);
+    fireEvent.wheel(surface, { deltaY: -100 });
+    vi.advanceTimersByTime(80);
+    const beforeReverse = maps[0].getZoom();
+    fireEvent.wheel(surface, { deltaY: 100 });
+    vi.advanceTimersByTime(32);
+    expect(maps[0].getZoom()).toBeLessThan(beforeReverse);
+    fireEvent.pointerDown(surface);
+    maps[0].moveCamera.mockClear();
+    vi.advanceTimersByTime(350);
+    expect(maps[0].moveCamera).not.toHaveBeenCalled();
+    fireEvent.wheel(surface, { deltaY: -10 });
+    vi.advanceTimersByTime(32);
+    expect(maps[0].moveCamera).toHaveBeenCalled();
+    view.unmount();
+    maps[0].moveCamera.mockClear();
+    vi.advanceTimersByTime(350);
     expect(maps[0].moveCamera).not.toHaveBeenCalled();
   });
 

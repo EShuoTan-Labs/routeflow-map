@@ -66,7 +66,13 @@ export function MapView({ config }: { config: Config }) {
     setResults((prev) => ({ ...prev, [i]: result }));
   useEffect(() => {
     let disposed = false;
-    let wheelDelta = 0;
+    let zoomFrame: number | undefined;
+    let targetZoom: number | undefined;
+    const cancelZoom = () => {
+      if (zoomFrame !== undefined) cancelAnimationFrame(zoomFrame);
+      zoomFrame = undefined;
+      targetZoom = undefined;
+    };
     const mapHost = host.current;
     const directWheelZoom = (event: WheelEvent) => {
       if (
@@ -88,32 +94,47 @@ export function MapView({ config }: { config: Config }) {
             ? Math.max(mapHost.clientHeight, 1)
             : 1;
       const delta = event.deltaY * scale;
-      if (wheelDelta && Math.sign(wheelDelta) !== Math.sign(delta))
-        wheelDelta = 0;
-      wheelDelta += delta;
-      if (Math.abs(wheelDelta) < 40) return;
       const zoom = map.current.getZoom();
-      const direction = Math.sign(wheelDelta);
-      wheelDelta = 0;
       if (typeof zoom !== "number") return;
-      const nextZoom = Math.max(0, Math.min(21, zoom - direction));
+      // Accumulate ongoing input, but reverse immediately when scrolling back.
+      const baseZoom =
+        targetZoom !== undefined &&
+        Math.sign(targetZoom - zoom) === -Math.sign(delta)
+          ? targetZoom
+          : zoom;
+      const nextZoom = Math.max(
+        0,
+        Math.min(21, baseZoom - Math.max(-1, Math.min(1, delta / 200))),
+      );
       const projection = map.current.getProjection();
       const center = map.current.getCenter();
       if (nextZoom === zoom || !projection || !center) return;
       const point = projection.fromLatLngToPoint(center);
       if (!point) return;
       const rect = mapHost.getBoundingClientRect();
-      // Offset the center in world coordinates so the location beneath the
-      // cursor retains the same screen position at the new zoom level.
-      const scaleChange = 2 ** -zoom - 2 ** -nextZoom;
-      const nextCenter = projection.fromPointToLatLng(
-        new window.google.maps.Point(
-          point.x + (event.clientX - rect.left - rect.width / 2) * scaleChange,
-          point.y + (event.clientY - rect.top - rect.height / 2) * scaleChange,
-        ),
-      );
-      if (nextCenter)
-        map.current.moveCamera({ center: nextCenter, zoom: nextZoom });
+      const offsetX = event.clientX - rect.left - rect.width / 2;
+      const offsetY = event.clientY - rect.top - rect.height / 2;
+      cancelZoom();
+      targetZoom = nextZoom;
+      const started = performance.now();
+      const animateZoom = (now: number) => {
+        const progress = Math.min(1, (now - started) / 320);
+        const eased = 1 - (1 - progress) ** 3;
+        const frameZoom = zoom + (nextZoom - zoom) * eased;
+        // Keep the cursor's geographic anchor fixed throughout the transition.
+        const scaleChange = 2 ** -zoom - 2 ** -frameZoom;
+        const nextCenter = projection.fromPointToLatLng(
+          new window.google.maps.Point(
+            point.x + offsetX * scaleChange,
+            point.y + offsetY * scaleChange,
+          ),
+        );
+        if (nextCenter)
+          map.current.moveCamera({ center: nextCenter, zoom: frameZoom });
+        if (progress < 1) zoomFrame = requestAnimationFrame(animateZoom);
+        else cancelZoom();
+      };
+      zoomFrame = requestAnimationFrame(animateZoom);
     };
     // Keep Google's cooperative touch handling while making an unmodified
     // mouse wheel zoom directly on desktop.
@@ -121,6 +142,7 @@ export function MapView({ config }: { config: Config }) {
       capture: true,
       passive: false,
     });
+    window.addEventListener("pointerdown", cancelZoom, true);
     setResults({});
     setMarkerReady(false);
     setMapConfig(null);
@@ -167,7 +189,7 @@ export function MapView({ config }: { config: Config }) {
         map.current = new Map(host.current, {
           center: { lat: 35.68, lng: 139.76 },
           zoom: 11,
-          isFractionalZoomEnabled: false,
+          isFractionalZoomEnabled: true,
           mapId: "DEMO_MAP_ID",
           mapTypeControl: false,
           streetViewControl: false,
@@ -183,7 +205,9 @@ export function MapView({ config }: { config: Config }) {
     return () => {
       disposed = true;
       runner.current.cancel();
+      cancelZoom();
       window.removeEventListener("wheel", directWheelZoom, true);
+      window.removeEventListener("pointerdown", cancelZoom, true);
     };
   }, [config]);
   useEffect(() => {
